@@ -8,6 +8,10 @@ function App() {
   const [habits, setHabits] = useState([]);
   const [title, setTitle] = useState('');
 
+  // --- NEW: RPG STATE ---
+  const [xp, setXp] = useState(parseInt(localStorage.getItem('xp')) || 0);
+  const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
+
   // The Digital Wristband
   const config = {
     headers: { Authorization: `Bearer ${token}` }
@@ -23,6 +27,8 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('xp');
+    localStorage.removeItem('level');
     setToken(null);
   };
 
@@ -37,28 +43,32 @@ function App() {
     }
   };
 
-  // --- THE GAMIFICATION ENGINE ---
+  // --- UPDATED: THE GAMIFICATION ENGINE ---
   const completeHabit = async (id) => {
     try {
-      // 1. Tell the backend we finished the habit
+      // 1. Send the completion request
       const res = await axios.put(`https://habitforge-backend-7ab6.onrender.com/api/habits/${id}/complete`, {}, config);
       
-      // 2. Instantly update the UI without refreshing the page
-      setHabits(habits.map(habit => habit._id === id ? res.data : habit));
+      // 2. The backend now returns { habit, userStats }!
+      // Update the habit in the list
+      setHabits(habits.map(habit => habit._id === id ? res.data.habit : habit));
+      
+      // 3. Update the Player Stats!
+      setXp(res.data.userStats.xp);
+      setLevel(res.data.userStats.level);
+      
+      // Save stats so they survive a page refresh
+      localStorage.setItem('xp', res.data.userStats.xp);
+      localStorage.setItem('level', res.data.userStats.level);
       
     } catch (err) {
-      // 3. The "Anti-Cheat" Alert
       alert(err.response?.data?.message || "Something went wrong!");
     }
   };
 
-  // --- NEW: THE TRASH CAN ---
   const deleteHabit = async (id) => {
     try {
-      // 1. Tell the server to delete it (Remember to pass the config/token!)
       await axios.delete(`https://habitforge-backend-7ab6.onrender.com/api/habits/${id}`, config);
-      
-      // 2. Remove it from the screen immediately 
       setHabits(habits.filter(habit => habit._id !== id));
     } catch (err) {
       console.log("Delete Error:", err);
@@ -77,13 +87,26 @@ function App() {
       </nav>
 
       <div className="dashboard">
+        
+        {/* --- NEW: PLAYER STATS UI --- */}
+        <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#f1c40f' }}>Level {level}</h3>
+          
+          {/* The XP Progress Bar */}
+          <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '20px', borderRadius: '10px', overflow: 'hidden' }}>
+            <div className="xp-bar" style={{ width: `${xp}%`, backgroundColor: '#f1c40f', height: '100%', transition: 'width 0.5s ease-in-out' }}></div>
+          </div>
+          
+          <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#bdc3c7', fontWeight: 'bold' }}>XP: {xp} / 100</p>
+        </div>
+
         <section className="forge-area">
           <h3>Forge a New Habit</h3>
           <form onSubmit={addHabit}>
             <input 
               value={title} 
               onChange={(e) => setTitle(e.target.value)} 
-              placeholder="e.g., Read 30 mins" 
+              placeholder="e.g., Code for 1 hour" 
             />
             <button type="submit" className="forge-btn">Forge Habit ⚒️</button>
           </form>
@@ -95,7 +118,6 @@ function App() {
               <h4>{habit.title}</h4>
               <p>Streak: {habit.currentStreak} 🔥</p>
               
-              {/* BUTTON GROUP */}
               <div className="button-group" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button 
                   className="complete-btn" 
@@ -103,8 +125,6 @@ function App() {
                 >
                   Done! ✅
                 </button>
-
-                {/* NEW: The Delete Button */}
                 <button 
                   className="delete-btn" 
                   onClick={() => deleteHabit(habit._id)}
@@ -113,7 +133,6 @@ function App() {
                   Trash 🗑️
                 </button>
               </div>
-
             </div>
           ))}
         </section>
