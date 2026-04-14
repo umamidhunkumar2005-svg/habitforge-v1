@@ -7,4 +7,5 @@ const userSchema = new mongoose.Schema({
   level: { type: Number, default: 1 }
 });
 
+// CRITICAL: No curly braces here!
 module.exports = mongoose.model('User', userSchema);

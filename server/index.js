@@ -10,16 +10,20 @@ const User = require('./models/User');
 const Habit = require('./models/Habit');
 
 const app = express();
-const port = process.env.PORT || 10000; // Render likes 10000
+const port = process.env.PORT || 10000;
 
 // --- MIDDLEWARE ---
-app.use(cors()); // Allows your local React app to talk to Render
-app.use(express.json()); // Allows the server to read the email/password you send
+// Always put these BEFORE your routes
+app.use(cors()); 
+app.use(express.json()); 
+
+// Debugging check: This will print in your Render logs to confirm User model loaded
+console.log("Checking User Model:", typeof User.findOne === 'function' ? "LOADED SUCCESSFULLY ✅" : "LOAD FAILED ❌");
 
 // --- DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Database Connection: SUCCESS!'))
-  .catch((err) => console.log('Database Connection: FAILED...', err));
+  .catch((err) => console.error('Database Connection: FAILED...', err));
 
 // --- AUTH ROUTES ---
 
@@ -27,6 +31,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "User already exists" });
 
@@ -36,8 +41,8 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully!" });
   } catch (error) {
-    console.error("Reg Error:", error);
-    res.status(500).json({ error: "Registration failed" });
+    console.error("Reg Error Detail:", error);
+    res.status(500).json({ error: "Registration failed", detail: error.message });
   }
 });
 
@@ -65,7 +70,7 @@ app.get('/api/habits', async (req, res) => {
     const habits = await Habit.find();
     res.status(200).json(habits);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch" });
+    res.status(500).json({ error: "Failed to fetch habits" });
   }
 });
 
@@ -82,7 +87,43 @@ app.post('/api/habits', async (req, res) => {
   }
 });
 
-// ... Complete and Delete routes remain the same ...
+// Complete Habit (GAMIFICATION ENGINE)
+app.put('/api/habits/:id/complete', async (req, res) => {
+  try {
+    const habit = await Habit.findById(req.params.id);
+    if (!habit) return res.status(404).json({ error: "Habit not found" });
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    if (habit.completedDates.length > 0) {
+      const lastCompletion = new Date(habit.completedDates[habit.completedDates.length - 1]);
+      lastCompletion.setUTCHours(0, 0, 0, 0);
+      if (lastCompletion.getTime() === today.getTime()) {
+        return res.status(400).json({ message: "Already completed today!" });
+      }
+    }
+
+    habit.completedDates.push(new Date());
+    habit.currentStreak += 1;
+    if (habit.currentStreak > habit.longestStreak) habit.longestStreak = habit.currentStreak;
+
+    const updatedHabit = await habit.save();
+    res.status(200).json(updatedHabit);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update habit" });
+  }
+});
+
+// Delete Habit
+app.delete('/api/habits/:id', async (req, res) => {
+  try {
+    await Habit.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Habit deleted" });
+  } catch (error) {
+    res.status(500).json({ error: "Delete failed" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
