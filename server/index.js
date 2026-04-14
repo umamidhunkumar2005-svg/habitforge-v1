@@ -5,19 +5,19 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Import Models
+// Import Models & Middleware
 const User = require('./models/User');
 const Habit = require('./models/Habit');
+const auth = require('./middleware/auth'); // Import the security bouncer
 
 const app = express();
 const port = process.env.PORT || 10000;
 
 // --- MIDDLEWARE ---
-// Always put these BEFORE your routes
 app.use(cors()); 
 app.use(express.json()); 
 
-// Debugging check: This will print in your Render logs to confirm User model loaded
+// Debugging check for the logs
 console.log("Checking User Model:", typeof User.findOne === 'function' ? "LOADED SUCCESSFULLY ✅" : "LOAD FAILED ❌");
 
 // --- DATABASE CONNECTION ---
@@ -27,11 +27,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- AUTH ROUTES ---
 
-// Register
+// Register a new user
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "User already exists" });
 
@@ -41,7 +40,6 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully!" });
   } catch (error) {
-    console.error("Reg Error Detail:", error);
     res.status(500).json({ error: "Registration failed", detail: error.message });
   }
 });
@@ -57,41 +55,46 @@ app.post('/api/auth/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level } });
+    res.json({ token, user: { id: user._id, email: user.email } });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
   }
 });
 
-// --- HABIT ROUTES ---
+// --- PROTECTED HABIT ROUTES (Only for Logged-in Users) ---
 
-app.get('/api/habits', async (req, res) => {
+// 1. Fetch habits (Only ones owned by the logged-in user)
+app.get('/api/habits', auth, async (req, res) => {
   try {
-    const habits = await Habit.find();
+    const habits = await Habit.find({ user: req.userId }); 
     res.status(200).json(habits);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch habits" });
   }
 });
 
-app.post('/api/habits', async (req, res) => {
+// 2. Create habit (Stamps it with the User ID)
+app.post('/api/habits', auth, async (req, res) => {
   try {
     const newHabit = new Habit({
       title: req.body.title,
-      description: req.body.description
+      description: req.body.description || "",
+      user: req.userId // This is critical for security!
     });
     const savedHabit = await newHabit.save(); 
     res.status(201).json(savedHabit); 
   } catch (error) {
-    res.status(500).json({ error: "Failed to create habit" });
+    console.error("Create Error:", error);
+    res.status(500).json({ error: "Failed to create habit", detail: error.message });
   }
 });
 
-// Complete Habit (GAMIFICATION ENGINE)
-app.put('/api/habits/:id/complete', async (req, res) => {
+// 3. Complete Habit (Gamification Engine)
+app.put('/api/habits/:id/complete', auth, async (req, res) => {
   try {
-    const habit = await Habit.findById(req.params.id);
-    if (!habit) return res.status(404).json({ error: "Habit not found" });
+    // Ensure the user owns the habit they are trying to complete
+    const habit = await Habit.findOne({ _id: req.params.id, user: req.userId });
+    if (!habit) return res.status(404).json({ error: "Habit not found or not owned by you" });
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
@@ -115,10 +118,11 @@ app.put('/api/habits/:id/complete', async (req, res) => {
   }
 });
 
-// Delete Habit
-app.delete('/api/habits/:id', async (req, res) => {
+// 4. Delete Habit
+app.delete('/api/habits/:id', auth, async (req, res) => {
   try {
-    await Habit.findByIdAndDelete(req.params.id);
+    const deletedHabit = await Habit.findOneAndDelete({ _id: req.params.id, user: req.userId });
+    if (!deletedHabit) return res.status(404).json({ error: "Habit not found" });
     res.status(200).json({ message: "Habit deleted" });
   } catch (error) {
     res.status(500).json({ error: "Delete failed" });
