@@ -159,3 +159,32 @@ app.delete('/api/habits/:id', auth, async (req, res) => {
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });
+// 5. The Multiplayer Leaderboard (Hall of Fame)
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    // 1. Fetch the top 10 users, sorted by Level (highest first), then XP (highest first)
+    // We only ask for the email, level, and xp fields to save memory.
+    const topUsers = await User.find({}, 'email level xp')
+      .sort({ level: -1, xp: -1 })
+      .limit(10);
+
+    // 2. Privacy Masking: Hide full emails before sending to the frontend
+    const safeLeaderboard = topUsers.map(user => {
+      const emailParts = user.email.split('@');
+      const maskedName = emailParts[0].substring(0, 2) + '***'; // Grabs first 2 letters
+      return { 
+        _id: user._id, 
+        name: maskedName, 
+        level: user.level, 
+        xp: user.xp 
+      };
+    });
+
+    // 3. Send the safe data to the client
+    res.status(200).json(safeLeaderboard);
+
+  } catch (error) {
+    console.error("Leaderboard Error:", error);
+    res.status(500).json({ error: "Failed to fetch the Hall of Fame" });
+  }
+});
