@@ -10,7 +10,8 @@ const Login = ({ setToken }) => {
     e.preventDefault();
     const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
     try {
-      const res = await axios.post(`https://habitforge-backend-7ab6.onrender.com${endpoint}`, { email, password });
+      // UPDATED TO YOUR NEW RENDER URL
+      const res = await axios.post(`https://habitforge-api-tpbd.onrender.com${endpoint}`, { email, password });
       if (!isRegister) {
         localStorage.setItem('token', res.data.token);
         setToken(res.data.token);
