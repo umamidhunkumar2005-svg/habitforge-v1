@@ -21,17 +21,17 @@ function App() {
 
   useEffect(() => {
     if (token) {
-      // Fetch Personal Habits
-      axios.get('https://habitforge-backend-7ab6.onrender.com/api/habits', config)
+      // Fetch Personal Habits using your NEW Render URL
+      axios.get('https://habitforge-api-tpbd.onrender.com/api/habits', config)
         .then(res => setHabits(res.data))
         .catch(err => console.log("Fetch Error:", err));
 
-      // NEW: Fetch Global Leaderboard
-      axios.get('https://habitforge-backend-7ab6.onrender.com/api/leaderboard')
+      // NEW: Fetch Global Leaderboard using your NEW Render URL
+      axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data))
         .catch(err => console.log("Leaderboard Fetch Error:", err));
     }
-  }, [token]); // We might want to refresh the leaderboard when they complete a habit too!
+  }, [token]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -43,7 +43,7 @@ function App() {
   const addHabit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('https://habitforge-backend-7ab6.onrender.com/api/habits', { title }, config);
+      const res = await axios.post('https://habitforge-api-tpbd.onrender.com/api/habits', { title }, config);
       setHabits([...habits, res.data]);
       setTitle('');
     } catch (err) {
@@ -53,7 +53,7 @@ function App() {
 
   const completeHabit = async (id) => {
     try {
-      const res = await axios.put(`https://habitforge-backend-7ab6.onrender.com/api/habits/${id}/complete`, {}, config);
+      const res = await axios.put(`https://habitforge-api-tpbd.onrender.com/api/habits/${id}/complete`, {}, config);
       setHabits(habits.map(habit => habit._id === id ? res.data.habit : habit));
       
       setXp(res.data.userStats.xp);
@@ -62,7 +62,7 @@ function App() {
       localStorage.setItem('level', res.data.userStats.level);
       
       // NEW: Refresh the leaderboard silently in the background when you get XP!
-      axios.get('https://habitforge-backend-7ab6.onrender.com/api/leaderboard')
+      axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data));
 
     } catch (err) {
@@ -72,7 +72,7 @@ function App() {
 
   const deleteHabit = async (id) => {
     try {
-      await axios.delete(`https://habitforge-backend-7ab6.onrender.com/api/habits/${id}`, config);
+      await axios.delete(`https://habitforge-api-tpbd.onrender.com/api/habits/${id}`, config);
       setHabits(habits.filter(habit => habit._id !== id));
     } catch (err) {
       console.log("Delete Error:", err);
