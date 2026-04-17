@@ -150,6 +150,22 @@ app.delete('/api/habits/:id', auth, async (req, res) => {
   }
 });
 
+// 4.5 Edit Habit Title
+app.put('/api/habits/:id/edit', auth, async (req, res) => {
+  try {
+    const updatedHabit = await Habit.findOneAndUpdate(
+      { _id: req.params.id, user: req.userId },
+      { title: req.body.title },
+      { new: true } // Returns the updated document
+    );
+    if (!updatedHabit) return res.status(404).json({ error: "Habit not found" });
+    res.status(200).json(updatedHabit);
+  } catch (error) {
+    console.error("Edit Error:", error);
+    res.status(500).json({ error: "Failed to edit habit" });
+  }
+});
+
 // 5. Multiplayer Leaderboard
 app.get('/api/leaderboard', async (req, res) => {
   try {

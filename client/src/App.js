@@ -11,9 +11,11 @@ function App() {
   // --- RPG STATE ---
   const [xp, setXp] = useState(parseInt(localStorage.getItem('xp')) || 0);
   const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
-  
-  // --- NEW: MULTIPLAYER STATE ---
   const [leaderboard, setLeaderboard] = useState([]);
+
+  // --- NEW: EDIT STATE ---
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const config = {
     headers: { Authorization: `Bearer ${token}` }
@@ -21,12 +23,10 @@ function App() {
 
   useEffect(() => {
     if (token) {
-      // Fetch Personal Habits
       axios.get('https://habitforge-api-tpbd.onrender.com/api/habits', config)
         .then(res => setHabits(res.data))
         .catch(err => console.log("Fetch Error:", err));
 
-      // Fetch Global Leaderboard
       axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data))
         .catch(err => console.log("Leaderboard Fetch Error:", err));
@@ -61,10 +61,8 @@ function App() {
       localStorage.setItem('xp', res.data.userStats.xp);
       localStorage.setItem('level', res.data.userStats.level);
       
-      // Refresh the leaderboard silently
       axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data));
-
     } catch (err) {
       alert(err.response?.data?.message || "Something went wrong!");
     }
@@ -76,6 +74,17 @@ function App() {
       setHabits(habits.filter(habit => habit._id !== id));
     } catch (err) {
       console.log("Delete Error:", err);
+    }
+  };
+
+  // --- NEW: SAVE EDITED HABIT ---
+  const saveEdit = async (id) => {
+    try {
+      const res = await axios.put(`https://habitforge-api-tpbd.onrender.com/api/habits/${id}/edit`, { title: editTitle }, config);
+      setHabits(habits.map(habit => habit._id === id ? res.data : habit));
+      setEditingId(null); // Close the edit box
+    } catch (err) {
+      console.log("Edit Error:", err);
     }
   };
 
@@ -92,38 +101,17 @@ function App() {
 
       <div className="dashboard" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
         
-        {/* Left Column: Stats & Habits */}
         <div className="main-content" style={{ flex: '1', minWidth: '300px', maxWidth: '600px' }}>
           
-          {/* PLAYER STATS UI - UPDATED XP BAR */}
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <h3 style={{ margin: '0 0 10px 0', color: '#f1c40f' }}>Level {level}</h3>
-            
             <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
-              {/* The actual progress bar */}
-              <div className="xp-bar" style={{ 
-                  width: `${xp}%`, 
-                  backgroundColor: '#f1c40f', 
-                  height: '100%', 
-                  transition: 'width 0.5s ease-in-out' 
-              }}></div>
-              
-              {/* XP Text Overlay */}
-              <span style={{ 
-                  position: 'absolute', 
-                  width: '100%', 
-                  textAlign: 'center', 
-                  top: '2px', 
-                  fontSize: '14px', 
-                  fontWeight: 'bold', 
-                  color: xp > 50 ? '#2c3e50' : 'white',
-                  textShadow: xp <= 50 ? '1px 1px 2px rgba(0,0,0,0.5)' : 'none'
-              }}>
+              <div className="xp-bar" style={{ width: `${xp}%`, backgroundColor: '#f1c40f', height: '100%', transition: 'width 0.5s ease-in-out' }}></div>
+              <span style={{ position: 'absolute', width: '100%', textAlign: 'center', top: '2px', fontSize: '14px', fontWeight: 'bold', color: xp > 50 ? '#2c3e50' : 'white', textShadow: xp <= 50 ? '1px 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
                 {xp} / 100 XP
               </span>
             </div>
-            
-            <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge 5 habits to reach the next level!</p>
+            <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
           </div>
 
           <section className="forge-area" style={{ marginBottom: '20px' }}>
@@ -137,10 +125,28 @@ function App() {
           <section className="habit-display">
             {habits.map(habit => (
               <div key={habit._id} className="habit-card">
-                <h4>{habit.title}</h4>
+                
+                {/* CONDITIONAL RENDERING: Are we editing this habit? */}
+                {editingId === habit._id ? (
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                    <input 
+                      style={{ flex: 1, padding: '5px' }}
+                      value={editTitle} 
+                      onChange={(e) => setEditTitle(e.target.value)} 
+                      autoFocus
+                    />
+                    <button onClick={() => saveEdit(habit._id)} style={{ backgroundColor: '#2ecc71', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Save 💾</button>
+                    <button onClick={() => setEditingId(null)} style={{ backgroundColor: '#95a5a6', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                ) : (
+                  <h4>{habit.title}</h4>
+                )}
+
                 <p>Streak: {habit.currentStreak} 🔥</p>
+                
                 <div className="button-group" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                   <button className="complete-btn" onClick={() => completeHabit(habit._id)}>Done! ✅</button>
+                  <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Edit ✏️</button>
                   <button className="delete-btn" onClick={() => deleteHabit(habit._id)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Trash 🗑️</button>
                 </div>
               </div>
@@ -148,7 +154,6 @@ function App() {
           </section>
         </div>
 
-        {/* Right Column: Leaderboard */}
         <div className="multiplayer-sidebar" style={{ flex: '1', minWidth: '250px', maxWidth: '350px' }}>
           <div className="leaderboard-card" style={{ backgroundColor: '#fdfbf7', border: '2px solid #e0dcd3', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
             <h3 style={{ marginTop: '0', color: '#2c3e50', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hall of Fame 🏆</h3>
