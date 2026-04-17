@@ -1,40 +1,42 @@
-# HabitForge ⚒️ 🐉
+# HabitForge ⚒️🐉
 
-![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue) ![Status](https://img.shields.io/badge/Status-Live-success)
+HabitForge is a full-stack, gamified productivity web application designed to help users build and maintain positive daily habits. By integrating RPG-style mechanics (XP, Leveling, and Streaks) with a global multiplayer leaderboard, HabitForge turns daily self-improvement into an engaging, competitive game.
 
-HabitForge is a full-stack, gamified habit-tracking application designed to turn daily productivity into a role-playing game. 
+**🚀 Live Demo:** [HabitForge on Vercel](https://habitforge-v1-git-main-habit-forge-team.vercel.app)
 
-Users can securely log in, forge new habits, and earn Experience Points (XP) for completing their daily tasks. Build your streak, level up your character, and climb the global Hall of Fame. 
+---
 
-## 🌐 Live Demo
-**[Play HabitForge Live](https://habitforge-od7j.vercel.app/)**
+## 🎮 Core Features
 
-## ✨ Core Features
-* **Authentication:** Secure user registration and login using JWT and Bcrypt password hashing.
-* **CRUD Architecture:** Full Create, Read, Update, and Delete functionality for personal habits.
-* **The RPG Engine:** Custom backend logic that calculates daily streaks, awards +10 XP per completion, and handles level-up thresholds.
-* **Global Leaderboard:** A multiplayer "Hall of Fame" that ranks the top 10 users by Level and XP, utilizing data masking to protect user privacy.
-* **Anti-Cheat System:** Server-side validation that prevents users from spamming completions on the same day.
+* **Gamified Progression:** Earn 20 XP for every habit completed. Accumulate 100 XP to level up your character.
+* **Full CRUD Functionality:** Users can Create, Read, Update (Edit), and Delete their daily habits.
+* **Streak Tracking:** Built-in daily tracking to visually monitor habit consistency (🔥).
+* **Multiplayer Leaderboard:** A real-time "Hall of Fame" that ranks the top 10 users globally based on their Level and XP.
+* **Secure Authentication:** User registration and login powered by encrypted passwords (bcrypt) and JWT (JSON Web Tokens).
 
-## 🛠️ The Tech Stack
-This application was built from the ground up using the **MERN** Stack:
-* **Frontend:** React.js, HTML5, standard CSS.
-* **Backend:** Node.js, Express.js.
-* **Database:** MongoDB (hosted on MongoDB Atlas).
-* **Security:** JSON Web Tokens (JWT) for session management, Bcrypt for password encryption.
-* **Deployment:** Vercel (Frontend CI/CD) and Render (Backend API).
+---
 
-## 🚀 Local Installation
-If you'd like to run HabitForge on your local machine:
+## 🛠️ Technology Stack
 
-1. **Clone the repository:**
-   `git clone https://github.com/your-username/habitforge.git`
-2. **Install Server Dependencies:**
-   `cd server && npm install`
-3. **Install Client Dependencies:**
-   `cd ../client && npm install`
-4. **Environment Variables:**
-   Create a `.env` file in the `server` directory with your `MONGO_URI` and `JWT_SECRET`.
-5. **Run the App:**
-   Start the backend (`nodemon index.js`) and the frontend (`npm start`).
-   
+**Frontend (Client)**
+* **React.js:** UI component architecture.
+* **Axios:** Handling HTTP requests to the backend API.
+* **CSS3:** Custom styling and responsive design.
+* **Vercel:** Live frontend deployment.
+
+**Backend (Server)**
+* **Node.js & Express.js:** RESTful API architecture.
+* **MongoDB & Mongoose:** NoSQL database for flexible data storage.
+* **JSON Web Tokens (JWT):** Secure, stateless user authentication.
+* **Render:** Live backend deployment.
+
+---
+
+## 💻 Local Installation
+
+To run HabitForge locally on your machine, follow these steps:
+
+**1. Clone the repository**
+```bash
+git clone [https://github.com/umamidhunkumar2005-svg/habitforge-v1.git](https://github.com/umamidhunkumar2005-svg/habitforge-v1.git)
+cd habitforge-v1
