@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 // Import Models & Middleware
 const User = require('./models/User');
 const Habit = require('./models/Habit');
-const auth = require('./middleware/auth'); // Import the security bouncer
+const auth = require('./middleware/auth'); 
 
 const app = express();
 const port = process.env.PORT || 10000;
@@ -17,7 +17,7 @@ const port = process.env.PORT || 10000;
 app.use(cors()); 
 app.use(express.json()); 
 
-// Debugging check for the logs
+// Debugging check
 console.log("Checking User Model:", typeof User.findOne === 'function' ? "LOADED SUCCESSFULLY ✅" : "LOAD FAILED ❌");
 
 // --- DATABASE CONNECTION ---
@@ -56,14 +56,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     
-    // Updated Login to send XP and Level on load
     res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level } });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
   }
 });
 
-// --- PROTECTED HABIT ROUTES (Only for Logged-in Users) ---
+// --- PROTECTED HABIT ROUTES ---
 
 // 1. Fetch habits
 app.get('/api/habits', auth, async (req, res) => {
@@ -94,11 +93,9 @@ app.post('/api/habits', auth, async (req, res) => {
 // 3. Complete Habit (THE RPG ENGINE 🐉)
 app.put('/api/habits/:id/complete', auth, async (req, res) => {
   try {
-    // A. Find the Habit
     const habit = await Habit.findOne({ _id: req.params.id, user: req.userId });
-    if (!habit) return res.status(404).json({ error: "Habit not found or not owned by you" });
+    if (!habit) return res.status(404).json({ error: "Habit not found" });
 
-    // B. Anti-Cheat (Once per day check)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
@@ -110,30 +107,27 @@ app.put('/api/habits/:id/complete', auth, async (req, res) => {
       }
     }
 
-    // C. Update Habit Streaks
     habit.completedDates.push(new Date());
     habit.currentStreak += 1;
     if (habit.currentStreak > habit.longestStreak) habit.longestStreak = habit.currentStreak;
     const updatedHabit = await habit.save();
 
-    // D. NEW: THE RPG SYSTEM (Update User XP & Level)
     const user = await User.findById(req.userId);
     
-    // Give 10 XP per completion
-    let newXp = user.xp + 10;
+    // --- UPDATED RPG LOGIC: 20 XP per completion ---
+    let newXp = user.xp + 20; 
     let newLevel = user.level;
 
-    // Level Up Logic! Every 100 XP is a new level.
+    // Check for Level Up (Every 100 XP)
     if (newXp >= 100) {
-      newLevel += 1;       // Increase Level
-      newXp = newXp - 100; // Reset XP toward the next 100
+      newLevel += 1;       
+      newXp = newXp - 100; // Keep the remainder
     }
 
     user.xp = newXp;
     user.level = newLevel;
     await user.save();
 
-    // E. Send BOTH the updated habit and the updated user stats back to the frontend
     res.status(200).json({
       habit: updatedHabit,
       userStats: { xp: user.xp, level: user.level }
@@ -156,22 +150,16 @@ app.delete('/api/habits/:id', auth, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
-});
-// 5. The Multiplayer Leaderboard (Hall of Fame)
+// 5. Multiplayer Leaderboard
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    // 1. Fetch the top 10 users, sorted by Level (highest first), then XP (highest first)
-    // We only ask for the email, level, and xp fields to save memory.
     const topUsers = await User.find({}, 'email level xp')
       .sort({ level: -1, xp: -1 })
       .limit(10);
 
-    // 2. Privacy Masking: Hide full emails before sending to the frontend
     const safeLeaderboard = topUsers.map(user => {
       const emailParts = user.email.split('@');
-      const maskedName = emailParts[0].substring(0, 2) + '***'; // Grabs first 2 letters
+      const maskedName = emailParts[0].substring(0, 2) + '***';
       return { 
         _id: user._id, 
         name: maskedName, 
@@ -180,11 +168,13 @@ app.get('/api/leaderboard', async (req, res) => {
       };
     });
 
-    // 3. Send the safe data to the client
     res.status(200).json(safeLeaderboard);
-
   } catch (error) {
     console.error("Leaderboard Error:", error);
-    res.status(500).json({ error: "Failed to fetch the Hall of Fame" });
+    res.status(500).json({ error: "Failed to fetch Hall of Fame" });
   }
+});
+
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
 });

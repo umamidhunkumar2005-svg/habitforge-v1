@@ -21,12 +21,12 @@ function App() {
 
   useEffect(() => {
     if (token) {
-      // Fetch Personal Habits using your NEW Render URL
+      // Fetch Personal Habits
       axios.get('https://habitforge-api-tpbd.onrender.com/api/habits', config)
         .then(res => setHabits(res.data))
         .catch(err => console.log("Fetch Error:", err));
 
-      // NEW: Fetch Global Leaderboard using your NEW Render URL
+      // Fetch Global Leaderboard
       axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data))
         .catch(err => console.log("Leaderboard Fetch Error:", err));
@@ -61,7 +61,7 @@ function App() {
       localStorage.setItem('xp', res.data.userStats.xp);
       localStorage.setItem('level', res.data.userStats.level);
       
-      // NEW: Refresh the leaderboard silently in the background when you get XP!
+      // Refresh the leaderboard silently
       axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data));
 
@@ -94,13 +94,36 @@ function App() {
         
         {/* Left Column: Stats & Habits */}
         <div className="main-content" style={{ flex: '1', minWidth: '300px', maxWidth: '600px' }}>
-          {/* PLAYER STATS UI */}
+          
+          {/* PLAYER STATS UI - UPDATED XP BAR */}
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <h3 style={{ margin: '0 0 10px 0', color: '#f1c40f' }}>Level {level}</h3>
-            <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '20px', borderRadius: '10px', overflow: 'hidden' }}>
-              <div className="xp-bar" style={{ width: `${xp}%`, backgroundColor: '#f1c40f', height: '100%', transition: 'width 0.5s ease-in-out' }}></div>
+            
+            <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
+              {/* The actual progress bar */}
+              <div className="xp-bar" style={{ 
+                  width: `${xp}%`, 
+                  backgroundColor: '#f1c40f', 
+                  height: '100%', 
+                  transition: 'width 0.5s ease-in-out' 
+              }}></div>
+              
+              {/* XP Text Overlay */}
+              <span style={{ 
+                  position: 'absolute', 
+                  width: '100%', 
+                  textAlign: 'center', 
+                  top: '2px', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold', 
+                  color: xp > 50 ? '#2c3e50' : 'white',
+                  textShadow: xp <= 50 ? '1px 1px 2px rgba(0,0,0,0.5)' : 'none'
+              }}>
+                {xp} / 100 XP
+              </span>
             </div>
-            <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#bdc3c7', fontWeight: 'bold' }}>XP: {xp} / 100</p>
+            
+            <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge 5 habits to reach the next level!</p>
           </div>
 
           <section className="forge-area" style={{ marginBottom: '20px' }}>
@@ -125,7 +148,7 @@ function App() {
           </section>
         </div>
 
-        {/* --- Right Column: NEW LEADERBOARD UI --- */}
+        {/* Right Column: Leaderboard */}
         <div className="multiplayer-sidebar" style={{ flex: '1', minWidth: '250px', maxWidth: '350px' }}>
           <div className="leaderboard-card" style={{ backgroundColor: '#fdfbf7', border: '2px solid #e0dcd3', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
             <h3 style={{ marginTop: '0', color: '#2c3e50', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hall of Fame 🏆</h3>
