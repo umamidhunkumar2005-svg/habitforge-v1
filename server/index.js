@@ -5,25 +5,21 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Import Models, Middleware & Utilities
 const User = require('./models/User');
 const Habit = require('./models/Habit');
 const auth = require('./middleware/auth'); 
-const { calculateLevelProgress, calculateStreak } = require('./utils/gamification'); // NEW: Modular Gamification Engine
+const { calculateLevelProgress, calculateStreak } = require('./utils/gamification'); 
 
 const app = express();
 const port = process.env.PORT || 10000;
 
-// --- MIDDLEWARE ---
 app.use(cors()); 
 app.use(express.json()); 
 
-// --- DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Database Connection: SUCCESS!'))
   .catch((err) => console.error('Database Connection: FAILED...', err));
 
-// --- AUTH ROUTES ---
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -36,7 +32,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully!" });
   } catch (error) {
-    res.status(500).json({ error: "Registration failed", detail: error.message });
+    res.status(500).json({ error: "Registration failed" });
   }
 });
 
@@ -51,13 +47,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     
-    res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level } });
+    // NEW: Now sending badges back to the React frontend on login
+    res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level, badges: user.badges } });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
   }
 });
 
-// --- PROTECTED HABIT ROUTES ---
 app.get('/api/habits', auth, async (req, res) => {
   try {
     const habits = await Habit.find({ user: req.userId }); 
@@ -77,7 +73,7 @@ app.post('/api/habits', auth, async (req, res) => {
     const savedHabit = await newHabit.save(); 
     res.status(201).json(savedHabit); 
   } catch (error) {
-    res.status(500).json({ error: "Failed to create habit", detail: error.message });
+    res.status(500).json({ error: "Failed to create habit" });
   }
 });
 
@@ -90,7 +86,6 @@ app.put('/api/habits/:id/complete', auth, async (req, res) => {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    // Anti-Cheat
     if (habit.completedDates.length > 0) {
       const lastCompletion = new Date(habit.completedDates[habit.completedDates.length - 1]);
       lastCompletion.setUTCHours(0, 0, 0, 0);
@@ -99,36 +94,39 @@ app.put('/api/habits/:id/complete', auth, async (req, res) => {
       }
     }
 
-    // --- USE THE MODULAR UTILITY FOR STREAKS ---
     habit.currentStreak = calculateStreak(habit.completedDates, habit.currentStreak);
     habit.completedDates.push(new Date()); 
     if (habit.currentStreak > habit.longestStreak) habit.longestStreak = habit.currentStreak;
-    
     const updatedHabit = await habit.save();
-    const user = await User.findById(req.userId);
     
-    // --- USE THE MODULAR UTILITY FOR XP & LEVEL ---
+    const user = await User.findById(req.userId);
     const { newXp, newLevel } = calculateLevelProgress(user.xp, user.level);
-
     user.xp = newXp;
     user.level = newLevel;
+
+    // --- NEW: THE BADGE ACHIEVEMENT SYSTEM ---
+    if (habit.currentStreak === 3 && !user.badges.includes("Bronze Streak 🥉")) {
+      user.badges.push("Bronze Streak 🥉");
+    }
+    if (habit.currentStreak === 7 && !user.badges.includes("Consistency King 👑")) {
+      user.badges.push("Consistency King 👑");
+    }
+
     await user.save();
 
     res.status(200).json({
       habit: updatedHabit,
-      userStats: { xp: user.xp, level: user.level }
+      userStats: { xp: user.xp, level: user.level, badges: user.badges }
     });
 
   } catch (error) {
-    console.error("Complete Habit Error:", error);
     res.status(500).json({ error: "Failed to update habit" });
   }
 });
 
 app.delete('/api/habits/:id', auth, async (req, res) => {
   try {
-    const deletedHabit = await Habit.findOneAndDelete({ _id: req.params.id, user: req.userId });
-    if (!deletedHabit) return res.status(404).json({ error: "Habit not found" });
+    await Habit.findOneAndDelete({ _id: req.params.id, user: req.userId });
     res.status(200).json({ message: "Habit deleted" });
   } catch (error) {
     res.status(500).json({ error: "Delete failed" });
@@ -142,21 +140,18 @@ app.put('/api/habits/:id/edit', auth, async (req, res) => {
       { title: req.body.title },
       { new: true }
     );
-    if (!updatedHabit) return res.status(404).json({ error: "Habit not found" });
     res.status(200).json(updatedHabit);
   } catch (error) {
     res.status(500).json({ error: "Failed to edit habit" });
   }
 });
 
-// 5. Multiplayer Leaderboard
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const topUsers = await User.find({}, 'email level xp').sort({ level: -1, xp: -1 }).limit(10);
     const safeLeaderboard = topUsers.map(user => {
       const emailParts = user.email.split('@');
-      const maskedName = emailParts[0].substring(0, 2) + '***';
-      return { _id: user._id, name: maskedName, level: user.level, xp: user.xp };
+      return { _id: user._id, name: emailParts[0].substring(0, 2) + '***', level: user.level, xp: user.xp };
     });
     res.status(200).json(safeLeaderboard);
   } catch (error) {
@@ -164,6 +159,4 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
-});
+app.listen(port, () => console.log(`Server listening on port ${port}`));

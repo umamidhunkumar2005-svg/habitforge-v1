@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Login from './Login';
-import ConsistencyChart from './ConsistencyChart'; // <-- NEW: Importing your chart
+import ConsistencyChart from './ConsistencyChart'; 
 import './App.css';
 
 function App() {
@@ -13,6 +13,7 @@ function App() {
   const [xp, setXp] = useState(parseInt(localStorage.getItem('xp')) || 0);
   const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [badges, setBadges] = useState(JSON.parse(localStorage.getItem('badges')) || []); // <-- NEW: Badge State
 
   // --- EDIT STATE ---
   const [editingId, setEditingId] = useState(null);
@@ -38,6 +39,7 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('xp');
     localStorage.removeItem('level');
+    localStorage.removeItem('badges'); // Clear badges on logout
     setToken(null);
   };
 
@@ -59,8 +61,11 @@ function App() {
       
       setXp(res.data.userStats.xp);
       setLevel(res.data.userStats.level);
+      setBadges(res.data.userStats.badges || []); // Catch new badges from server
+      
       localStorage.setItem('xp', res.data.userStats.xp);
       localStorage.setItem('level', res.data.userStats.level);
+      localStorage.setItem('badges', JSON.stringify(res.data.userStats.badges || [])); 
       
       axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
         .then(res => setLeaderboard(res.data));
@@ -112,9 +117,22 @@ function App() {
               </span>
             </div>
             <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
+
+            {/* --- NEW: ACHIEVEMENTS TROPHY ROOM --- */}
+            {badges.length > 0 && (
+              <div style={{ marginTop: '15px', borderTop: '1px solid #34495e', paddingTop: '10px' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#bdc3c7', fontSize: '14px' }}>Achievements 🏅</h4>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {badges.map((badge, index) => (
+                    <span key={index} style={{ backgroundColor: '#e67e22', color: 'white', padding: '5px 12px', borderRadius: '15px', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* --- NEW: THE DATA VISUALIZATION CHART --- */}
           <div style={{ marginBottom: '20px' }}>
             <ConsistencyChart habits={habits} />
           </div>
