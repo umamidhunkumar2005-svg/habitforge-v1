@@ -5,7 +5,8 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   xp: { type: Number, default: 0 },
   level: { type: Number, default: 1 },
-  badges: { type: [String], default: [] } // <-- NEW: Array to store unlocked badges
+  badges: { type: [String], default: [] },
+  isPremium: { type: Boolean, default: false } // <-- NEW: Pro Status
 });
 
 module.exports = mongoose.model('User', UserSchema);

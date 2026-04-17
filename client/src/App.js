@@ -9,13 +9,13 @@ function App() {
   const [habits, setHabits] = useState([]);
   const [title, setTitle] = useState('');
 
-  // --- RPG STATE ---
+  // --- RPG & PRO STATE ---
   const [xp, setXp] = useState(parseInt(localStorage.getItem('xp')) || 0);
   const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [badges, setBadges] = useState(JSON.parse(localStorage.getItem('badges')) || []); // <-- NEW: Badge State
+  const [badges, setBadges] = useState(JSON.parse(localStorage.getItem('badges')) || []); 
+  const [isPremium, setIsPremium] = useState(localStorage.getItem('isPremium') === 'true'); // NEW: Pro State
 
-  // --- EDIT STATE ---
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
 
@@ -39,18 +39,36 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('xp');
     localStorage.removeItem('level');
-    localStorage.removeItem('badges'); // Clear badges on logout
+    localStorage.removeItem('badges'); 
+    localStorage.removeItem('isPremium'); // Clear Pro status on logout
     setToken(null);
+  };
+
+  // --- NEW: UPGRADE FUNCTION ---
+  const upgradeToPro = async () => {
+    try {
+      await axios.put('https://habitforge-api-tpbd.onrender.com/api/auth/upgrade', {}, config);
+      setIsPremium(true);
+      localStorage.setItem('isPremium', 'true');
+      alert("💎 Welcome to Pro! Analytics unlocked and limits removed.");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const addHabit = async (e) => {
     e.preventDefault();
+    // --- NEW: UI FREE LIMIT CHECK ---
+    if (!isPremium && habits.length >= 3) {
+      alert("Free tier limit reached! Please upgrade to Pro to forge more habits. 💎");
+      return;
+    }
     try {
       const res = await axios.post('https://habitforge-api-tpbd.onrender.com/api/habits', { title }, config);
       setHabits([...habits, res.data]);
       setTitle('');
     } catch (err) {
-      console.log("Add Error:", err);
+      alert(err.response?.data?.message || "Error adding habit");
     }
   };
 
@@ -61,7 +79,7 @@ function App() {
       
       setXp(res.data.userStats.xp);
       setLevel(res.data.userStats.level);
-      setBadges(res.data.userStats.badges || []); // Catch new badges from server
+      setBadges(res.data.userStats.badges || []); 
       
       localStorage.setItem('xp', res.data.userStats.xp);
       localStorage.setItem('level', res.data.userStats.level);
@@ -100,7 +118,7 @@ function App() {
   return (
     <div className="App">
       <nav className="navbar">
-        <h2>HabitForge ⚒️</h2>
+        <h2>HabitForge {isPremium ? '💎 PRO' : '⚒️'}</h2>
         <button className="logout-btn" onClick={handleLogout}>Logout 🚪</button>
       </nav>
 
@@ -118,7 +136,6 @@ function App() {
             </div>
             <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
 
-            {/* --- NEW: ACHIEVEMENTS TROPHY ROOM --- */}
             {badges.length > 0 && (
               <div style={{ marginTop: '15px', borderTop: '1px solid #34495e', paddingTop: '10px' }}>
                 <h4 style={{ margin: '0 0 10px 0', color: '#bdc3c7', fontSize: '14px' }}>Achievements 🏅</h4>
@@ -133,8 +150,19 @@ function App() {
             )}
           </div>
 
+          {/* --- NEW: THE PAYWALL LOGIC --- */}
           <div style={{ marginBottom: '20px' }}>
-            <ConsistencyChart habits={habits} />
+            {isPremium ? (
+              <ConsistencyChart habits={habits} />
+            ) : (
+              <div className="pro-paywall" style={{ backgroundColor: '#2c3e50', padding: '30px', borderRadius: '8px', textAlign: 'center', color: 'white', border: '2px dashed #f1c40f' }}>
+                <h3 style={{ color: '#f1c40f', margin: '0 0 10px 0' }}>Unlock Advanced Analytics 📈</h3>
+                <p style={{ color: '#bdc3c7', marginBottom: '20px' }}>Get the Consistency Graph and forge unlimited habits with HabitForge Pro.</p>
+                <button onClick={upgradeToPro} style={{ backgroundColor: '#f1c40f', color: '#2c3e50', padding: '10px 20px', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', transition: '0.3s' }}>
+                  Upgrade to Pro 💎
+                </button>
+              </div>
+            )}
           </div>
 
           <section className="forge-area" style={{ marginBottom: '20px' }}>

@@ -47,10 +47,21 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     
-    // NEW: Now sending badges back to the React frontend on login
-    res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level, badges: user.badges } });
+    res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level, badges: user.badges, isPremium: user.isPremium } });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// --- NEW: UPGRADE TO PRO ROUTE ---
+app.put('/api/auth/upgrade', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    user.isPremium = true;
+    await user.save();
+    res.status(200).json({ isPremium: true });
+  } catch (error) {
+    res.status(500).json({ error: "Upgrade failed" });
   }
 });
 
@@ -65,6 +76,14 @@ app.get('/api/habits', auth, async (req, res) => {
 
 app.post('/api/habits', auth, async (req, res) => {
   try {
+    const user = await User.findById(req.userId);
+    const habitCount = await Habit.countDocuments({ user: req.userId });
+
+    // --- NEW: FREEMIUM LIMIT LOGIC ---
+    if (!user.isPremium && habitCount >= 3) {
+      return res.status(403).json({ message: "Free tier is limited to 3 habits. Upgrade to Pro!" });
+    }
+
     const newHabit = new Habit({
       title: req.body.title,
       description: req.body.description || "",
@@ -77,7 +96,6 @@ app.post('/api/habits', auth, async (req, res) => {
   }
 });
 
-// 3. Complete Habit (THE RPG ENGINE 🐉)
 app.put('/api/habits/:id/complete', auth, async (req, res) => {
   try {
     const habit = await Habit.findOne({ _id: req.params.id, user: req.userId });
@@ -104,7 +122,6 @@ app.put('/api/habits/:id/complete', auth, async (req, res) => {
     user.xp = newXp;
     user.level = newLevel;
 
-    // --- NEW: THE BADGE ACHIEVEMENT SYSTEM ---
     if (habit.currentStreak === 3 && !user.badges.includes("Bronze Streak 🥉")) {
       user.badges.push("Bronze Streak 🥉");
     }
