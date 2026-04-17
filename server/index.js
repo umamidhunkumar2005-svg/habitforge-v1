@@ -163,6 +163,49 @@ app.put('/api/habits/:id/edit', auth, async (req, res) => {
   }
 });
 
+// --- TEMPORARY SEED ROUTE (Bypasses Local Network Issues) ---
+app.get('/api/seed', async (req, res) => {
+  try {
+    const email = "demo@habitforge.com";
+    const password = await bcrypt.hash("demo123", 10);
+    
+    let demoUser = await User.findOne({ email });
+    if (!demoUser) {
+      demoUser = new User({
+        email,
+        password,
+        xp: 85,
+        level: 12, 
+        isPremium: true,
+        badges: ["Bronze Streak 🥉", "Consistency King 👑"]
+      });
+      await demoUser.save();
+    }
+
+    const completedDates = [];
+    for (let i = 90; i >= 0; i--) {
+      if (Math.random() > 0.2) { 
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        completedDates.push(date);
+      }
+    }
+
+    const demoHabit = new Habit({
+      title: "Read 30 pages",
+      user: demoUser._id,
+      currentStreak: 5,
+      longestStreak: 22,
+      completedDates: completedDates
+    });
+
+    await demoHabit.save();
+    res.status(200).send("<h1>🎉 Database Seeded Successfully! You can close this page.</h1>");
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
+});
+
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const topUsers = await User.find({}, 'email level xp').sort({ level: -1, xp: -1 }).limit(10);
