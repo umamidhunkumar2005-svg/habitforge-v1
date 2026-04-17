@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Login from './Login';
+import ConsistencyChart from './ConsistencyChart'; // <-- NEW: Importing your chart
 import './App.css';
 
 function App() {
@@ -13,7 +14,7 @@ function App() {
   const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
   const [leaderboard, setLeaderboard] = useState([]);
 
-  // --- NEW: EDIT STATE ---
+  // --- EDIT STATE ---
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
 
@@ -77,12 +78,11 @@ function App() {
     }
   };
 
-  // --- NEW: SAVE EDITED HABIT ---
   const saveEdit = async (id) => {
     try {
       const res = await axios.put(`https://habitforge-api-tpbd.onrender.com/api/habits/${id}/edit`, { title: editTitle }, config);
       setHabits(habits.map(habit => habit._id === id ? res.data : habit));
-      setEditingId(null); // Close the edit box
+      setEditingId(null); 
     } catch (err) {
       console.log("Edit Error:", err);
     }
@@ -114,6 +114,11 @@ function App() {
             <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
           </div>
 
+          {/* --- NEW: THE DATA VISUALIZATION CHART --- */}
+          <div style={{ marginBottom: '20px' }}>
+            <ConsistencyChart habits={habits} />
+          </div>
+
           <section className="forge-area" style={{ marginBottom: '20px' }}>
             <h3>Forge a New Habit</h3>
             <form onSubmit={addHabit}>
@@ -126,7 +131,6 @@ function App() {
             {habits.map(habit => (
               <div key={habit._id} className="habit-card">
                 
-                {/* CONDITIONAL RENDERING: Are we editing this habit? */}
                 {editingId === habit._id ? (
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                     <input 
