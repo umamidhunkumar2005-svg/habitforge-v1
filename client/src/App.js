@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 import Login from './Login';
 import ConsistencyChart from './ConsistencyChart'; 
 import './App.css';
@@ -58,7 +59,6 @@ function App() {
     }
   };
 
-  // --- NEW: CSV EXPORT LOGIC ---
   const exportToCSV = () => {
     if (habits.length === 0) return alert("No habits to export!");
 
@@ -156,10 +156,22 @@ function App() {
         
         <div className="main-content" style={{ flex: '1', minWidth: '300px', maxWidth: '600px' }}>
           
+          {/* --- UPGRADED PLAYER STATS WITH AVATAR --- */}
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: '0 0 10px 0', color: '#f1c40f' }}>Level {level}</h3>
-              {/* --- NEW: CSV EXPORT BUTTON (PRO ONLY) --- */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <img 
+                  src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} 
+                  alt="Avatar" 
+                  style={{ width: '60px', height: '60px', backgroundColor: '#ecf0f1', borderRadius: '50%', border: '3px solid #f1c40f' }}
+                />
+                <div>
+                  <h3 style={{ margin: '0 0 5px 0', color: '#f1c40f' }}>Level {level}</h3>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
+                </div>
+              </div>
+
               {isPremium && (
                 <button onClick={exportToCSV} style={{ backgroundColor: '#27ae60', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
                   Export Data (CSV) 📥
@@ -167,13 +179,12 @@ function App() {
               )}
             </div>
             
-            <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
+            <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)', marginTop: '15px' }}>
               <div className="xp-bar" style={{ width: `${xp}%`, backgroundColor: '#f1c40f', height: '100%', transition: 'width 0.5s ease-in-out' }}></div>
               <span style={{ position: 'absolute', width: '100%', textAlign: 'center', top: '2px', fontSize: '14px', fontWeight: 'bold', color: xp > 50 ? '#2c3e50' : 'white', textShadow: xp <= 50 ? '1px 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
                 {xp} / 100 XP
               </span>
             </div>
-            <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
 
             {badges.length > 0 && (
               <div style={{ marginTop: '15px', borderTop: '1px solid #34495e', paddingTop: '10px' }}>
@@ -234,38 +245,55 @@ function App() {
           </section>
 
           <section className="habit-display">
-            {habits.map(habit => (
-              <div key={habit._id} className="habit-card" style={{ borderLeft: `6px solid ${habit.color || '#3498db'}`, position: 'relative' }}>
-                <span style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: '#ecf0f1', color: '#7f8c8d', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                  {habit.frequency || 'Daily'}
-                </span>
-                
-                {editingId === habit._id ? (
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                    <input 
-                      style={{ flex: 1, padding: '5px' }}
-                      value={editTitle} 
-                      onChange={(e) => setEditTitle(e.target.value)} 
-                      autoFocus
-                    />
-                    <button onClick={() => saveEdit(habit._id)} style={{ backgroundColor: '#2ecc71', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Save 💾</button>
-                    <button onClick={() => setEditingId(null)} style={{ backgroundColor: '#95a5a6', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
-                  </div>
-                ) : (
-                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', margin: '0 0 10px 0' }}>
-                    <span>{habit.icon || '🎯'}</span> {habit.title}
-                  </h4>
-                )}
+            {/* --- NEW: FRAMER MOTION ANIMATIONS --- */}
+            <AnimatePresence>
+              {habits.map(habit => (
+                <motion.div 
+                  key={habit._id} 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                  className="habit-card" 
+                  style={{ borderLeft: `6px solid ${habit.color || '#3498db'}`, position: 'relative' }}
+                >
+                  <span style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: '#ecf0f1', color: '#7f8c8d', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                    {habit.frequency || 'Daily'}
+                  </span>
+                  
+                  {editingId === habit._id ? (
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                      <input 
+                        style={{ flex: 1, padding: '5px' }}
+                        value={editTitle} 
+                        onChange={(e) => setEditTitle(e.target.value)} 
+                        autoFocus
+                      />
+                      <button onClick={() => saveEdit(habit._id)} style={{ backgroundColor: '#2ecc71', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Save 💾</button>
+                      <button onClick={() => setEditingId(null)} style={{ backgroundColor: '#95a5a6', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                  ) : (
+                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', margin: '0 0 10px 0' }}>
+                      <span>{habit.icon || '🎯'}</span> {habit.title}
+                    </h4>
+                  )}
 
-                <p style={{ margin: '0 0 10px 0', color: '#34495e', fontWeight: 'bold' }}>Streak: {habit.currentStreak} 🔥</p>
-                
-                <div className="button-group" style={{ display: 'flex', gap: '10px' }}>
-                  <button className="complete-btn" onClick={() => completeHabit(habit._id)}>Done! ✅</button>
-                  <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Edit ✏️</button>
-                  <button className="delete-btn" onClick={() => deleteHabit(habit._id)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Trash 🗑️</button>
-                </div>
-              </div>
-            ))}
+                  <p style={{ margin: '0 0 10px 0', color: '#34495e', fontWeight: 'bold' }}>Streak: {habit.currentStreak} 🔥</p>
+                  
+                  <div className="button-group" style={{ display: 'flex', gap: '10px' }}>
+                    <motion.button 
+                      whileTap={{ scale: 0.9 }}
+                      className="complete-btn" 
+                      onClick={() => completeHabit(habit._id)}
+                    >
+                      Done! ✅
+                    </motion.button>
+                    <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Edit ✏️</button>
+                    <button className="delete-btn" onClick={() => deleteHabit(habit._id)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Trash 🗑️</button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </section>
         </div>
 
