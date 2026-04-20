@@ -8,7 +8,6 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [habits, setHabits] = useState([]);
   
-  // --- NEW: METADATA STATE FOR FORGING ---
   const [title, setTitle] = useState('');
   const [frequency, setFrequency] = useState('Daily');
   const [color, setColor] = useState('#3498db');
@@ -59,6 +58,31 @@ function App() {
     }
   };
 
+  // --- NEW: CSV EXPORT LOGIC ---
+  const exportToCSV = () => {
+    if (habits.length === 0) return alert("No habits to export!");
+
+    const headers = ["Habit Title", "Frequency", "Current Streak", "Longest Streak", "Total Completions"];
+    const rows = habits.map(habit => [
+      `"${habit.title}"`, 
+      habit.frequency || 'Daily', 
+      habit.currentStreak, 
+      habit.longestStreak, 
+      habit.completedDates.length
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "HabitForge_Data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const addHabit = async (e) => {
     e.preventDefault();
     if (!isPremium && habits.length >= 3) {
@@ -66,14 +90,13 @@ function App() {
       return;
     }
     try {
-      // --- NEW: SENDING METADATA TO BACKEND ---
       const res = await axios.post('https://habitforge-api-tpbd.onrender.com/api/habits', { 
         title, frequency, color, icon 
       }, config);
       
       setHabits([...habits, res.data]);
       setTitle('');
-      setIcon('🎯'); // Reset to default after adding
+      setIcon('🎯'); 
     } catch (err) {
       alert(err.response?.data?.message || "Error adding habit");
     }
@@ -134,7 +157,16 @@ function App() {
         <div className="main-content" style={{ flex: '1', minWidth: '300px', maxWidth: '600px' }}>
           
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#f1c40f' }}>Level {level}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: '0 0 10px 0', color: '#f1c40f' }}>Level {level}</h3>
+              {/* --- NEW: CSV EXPORT BUTTON (PRO ONLY) --- */}
+              {isPremium && (
+                <button onClick={exportToCSV} style={{ backgroundColor: '#27ae60', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+                  Export Data (CSV) 📥
+                </button>
+              )}
+            </div>
+            
             <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
               <div className="xp-bar" style={{ width: `${xp}%`, backgroundColor: '#f1c40f', height: '100%', transition: 'width 0.5s ease-in-out' }}></div>
               <span style={{ position: 'absolute', width: '100%', textAlign: 'center', top: '2px', fontSize: '14px', fontWeight: 'bold', color: xp > 50 ? '#2c3e50' : 'white', textShadow: xp <= 50 ? '1px 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
@@ -163,7 +195,7 @@ function App() {
             ) : (
               <div className="pro-paywall" style={{ backgroundColor: '#2c3e50', padding: '30px', borderRadius: '8px', textAlign: 'center', color: 'white', border: '2px dashed #f1c40f' }}>
                 <h3 style={{ color: '#f1c40f', margin: '0 0 10px 0' }}>Unlock Advanced Analytics 📈</h3>
-                <p style={{ color: '#bdc3c7', marginBottom: '20px' }}>Get the Consistency Graph and forge unlimited habits with HabitForge Pro.</p>
+                <p style={{ color: '#bdc3c7', marginBottom: '20px' }}>Get the Consistency Graph, Heatmap, and CSV Export with HabitForge Pro.</p>
                 <button onClick={upgradeToPro} style={{ backgroundColor: '#f1c40f', color: '#2c3e50', padding: '10px 20px', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', transition: '0.3s' }}>
                   Upgrade to Pro 💎
                 </button>
@@ -171,7 +203,6 @@ function App() {
             )}
           </div>
 
-          {/* --- NEW: UPGRADED FORGE AREA --- */}
           <section className="forge-area" style={{ marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
             <h3 style={{ marginTop: 0 }}>Forge a New Habit</h3>
             <form onSubmit={addHabit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -204,7 +235,6 @@ function App() {
 
           <section className="habit-display">
             {habits.map(habit => (
-              // --- NEW: DISPLAYING HABIT METADATA ---
               <div key={habit._id} className="habit-card" style={{ borderLeft: `6px solid ${habit.color || '#3498db'}`, position: 'relative' }}>
                 <span style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: '#ecf0f1', color: '#7f8c8d', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
                   {habit.frequency || 'Daily'}
