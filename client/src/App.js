@@ -7,14 +7,18 @@ import './App.css';
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [habits, setHabits] = useState([]);
+  
+  // --- NEW: METADATA STATE FOR FORGING ---
   const [title, setTitle] = useState('');
+  const [frequency, setFrequency] = useState('Daily');
+  const [color, setColor] = useState('#3498db');
+  const [icon, setIcon] = useState('🎯');
 
-  // --- RPG & PRO STATE ---
   const [xp, setXp] = useState(parseInt(localStorage.getItem('xp')) || 0);
   const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
   const [leaderboard, setLeaderboard] = useState([]);
   const [badges, setBadges] = useState(JSON.parse(localStorage.getItem('badges')) || []); 
-  const [isPremium, setIsPremium] = useState(localStorage.getItem('isPremium') === 'true'); // NEW: Pro State
+  const [isPremium, setIsPremium] = useState(localStorage.getItem('isPremium') === 'true');
 
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -40,11 +44,10 @@ function App() {
     localStorage.removeItem('xp');
     localStorage.removeItem('level');
     localStorage.removeItem('badges'); 
-    localStorage.removeItem('isPremium'); // Clear Pro status on logout
+    localStorage.removeItem('isPremium');
     setToken(null);
   };
 
-  // --- NEW: UPGRADE FUNCTION ---
   const upgradeToPro = async () => {
     try {
       await axios.put('https://habitforge-api-tpbd.onrender.com/api/auth/upgrade', {}, config);
@@ -58,15 +61,19 @@ function App() {
 
   const addHabit = async (e) => {
     e.preventDefault();
-    // --- NEW: UI FREE LIMIT CHECK ---
     if (!isPremium && habits.length >= 3) {
       alert("Free tier limit reached! Please upgrade to Pro to forge more habits. 💎");
       return;
     }
     try {
-      const res = await axios.post('https://habitforge-api-tpbd.onrender.com/api/habits', { title }, config);
+      // --- NEW: SENDING METADATA TO BACKEND ---
+      const res = await axios.post('https://habitforge-api-tpbd.onrender.com/api/habits', { 
+        title, frequency, color, icon 
+      }, config);
+      
       setHabits([...habits, res.data]);
       setTitle('');
+      setIcon('🎯'); // Reset to default after adding
     } catch (err) {
       alert(err.response?.data?.message || "Error adding habit");
     }
@@ -150,7 +157,6 @@ function App() {
             )}
           </div>
 
-          {/* --- NEW: THE PAYWALL LOGIC --- */}
           <div style={{ marginBottom: '20px' }}>
             {isPremium ? (
               <ConsistencyChart habits={habits} />
@@ -165,17 +171,44 @@ function App() {
             )}
           </div>
 
-          <section className="forge-area" style={{ marginBottom: '20px' }}>
-            <h3>Forge a New Habit</h3>
-            <form onSubmit={addHabit}>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Code for 1 hour" />
-              <button type="submit" className="forge-btn">Forge Habit ⚒️</button>
+          {/* --- NEW: UPGRADED FORGE AREA --- */}
+          <section className="forge-area" style={{ marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+            <h3 style={{ marginTop: 0 }}>Forge a New Habit</h3>
+            <form onSubmit={addHabit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <select value={icon} onChange={(e) => setIcon(e.target.value)} style={{ padding: '10px', fontSize: '18px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white' }}>
+                  <option value="🎯">🎯</option>
+                  <option value="💧">💧</option>
+                  <option value="📚">📚</option>
+                  <option value="💪">💪</option>
+                  <option value="🧘">🧘</option>
+                  <option value="💻">💻</option>
+                  <option value="🏃">🏃</option>
+                  <option value="🎸">🎸</option>
+                </select>
+                <input style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Read 30 pages" required />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}>
+                  <option value="Daily">Daily</option>
+                  <option value="Weekly">Weekly</option>
+                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <label style={{ fontSize: '14px', color: '#7f8c8d' }}>Color:</label>
+                  <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: '40px', height: '35px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer' }} />
+                </div>
+                <button type="submit" className="forge-btn" style={{ flex: 1, padding: '10px', backgroundColor: '#3498db', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Forge ⚒️</button>
+              </div>
             </form>
           </section>
 
           <section className="habit-display">
             {habits.map(habit => (
-              <div key={habit._id} className="habit-card">
+              // --- NEW: DISPLAYING HABIT METADATA ---
+              <div key={habit._id} className="habit-card" style={{ borderLeft: `6px solid ${habit.color || '#3498db'}`, position: 'relative' }}>
+                <span style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: '#ecf0f1', color: '#7f8c8d', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {habit.frequency || 'Daily'}
+                </span>
                 
                 {editingId === habit._id ? (
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -189,12 +222,14 @@ function App() {
                     <button onClick={() => setEditingId(null)} style={{ backgroundColor: '#95a5a6', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
                   </div>
                 ) : (
-                  <h4>{habit.title}</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', margin: '0 0 10px 0' }}>
+                    <span>{habit.icon || '🎯'}</span> {habit.title}
+                  </h4>
                 )}
 
-                <p>Streak: {habit.currentStreak} 🔥</p>
+                <p style={{ margin: '0 0 10px 0', color: '#34495e', fontWeight: 'bold' }}>Streak: {habit.currentStreak} 🔥</p>
                 
-                <div className="button-group" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <div className="button-group" style={{ display: 'flex', gap: '10px' }}>
                   <button className="complete-btn" onClick={() => completeHabit(habit._id)}>Done! ✅</button>
                   <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Edit ✏️</button>
                   <button className="delete-btn" onClick={() => deleteHabit(habit._id)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Trash 🗑️</button>

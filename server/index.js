@@ -53,7 +53,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// --- NEW: UPGRADE TO PRO ROUTE ---
+// --- UPGRADE TO PRO ROUTE ---
 app.put('/api/auth/upgrade', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -79,7 +79,7 @@ app.post('/api/habits', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     const habitCount = await Habit.countDocuments({ user: req.userId });
 
-    // --- NEW: FREEMIUM LIMIT LOGIC ---
+    // --- FREEMIUM LIMIT LOGIC ---
     if (!user.isPremium && habitCount >= 3) {
       return res.status(403).json({ message: "Free tier is limited to 3 habits. Upgrade to Pro!" });
     }
@@ -87,7 +87,11 @@ app.post('/api/habits', auth, async (req, res) => {
     const newHabit = new Habit({
       title: req.body.title,
       description: req.body.description || "",
-      user: req.userId
+      user: req.userId,
+      // --- NEW: ACCEPTING METADATA FROM FRONTEND ---
+      frequency: req.body.frequency || 'Daily',
+      color: req.body.color || '#3498db',
+      icon: req.body.icon || '🎯'
     });
     const savedHabit = await newHabit.save(); 
     res.status(201).json(savedHabit); 
