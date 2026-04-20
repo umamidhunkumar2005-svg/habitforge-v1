@@ -16,7 +16,9 @@ function App() {
 
   const [xp, setXp] = useState(parseInt(localStorage.getItem('xp')) || 0);
   const [level, setLevel] = useState(parseInt(localStorage.getItem('level')) || 1);
-  const [leaderboard, setLeaderboard] = useState([]);
+  
+  // We keep this to avoid errors, but we won't show the full list anymore
+  const [leaderboard, setLeaderboard] = useState([]); 
   const [badges, setBadges] = useState(JSON.parse(localStorage.getItem('badges')) || []); 
   const [isPremium, setIsPremium] = useState(localStorage.getItem('isPremium') === 'true');
 
@@ -45,6 +47,7 @@ function App() {
     localStorage.removeItem('level');
     localStorage.removeItem('badges'); 
     localStorage.removeItem('isPremium');
+    localStorage.removeItem('userEmail'); // Clean up email on logout
     setToken(null);
   };
 
@@ -61,7 +64,6 @@ function App() {
 
   const exportToCSV = () => {
     if (habits.length === 0) return alert("No habits to export!");
-
     const headers = ["Habit Title", "Frequency", "Current Streak", "Longest Streak", "Total Completions"];
     const rows = habits.map(habit => [
       `"${habit.title}"`, 
@@ -70,11 +72,9 @@ function App() {
       habit.longestStreak, 
       habit.completedDates.length
     ]);
-
     const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", "HabitForge_Data.csv");
@@ -93,7 +93,6 @@ function App() {
       const res = await axios.post('https://habitforge-api-tpbd.onrender.com/api/habits', { 
         title, frequency, color, icon 
       }, config);
-      
       setHabits([...habits, res.data]);
       setTitle('');
       setIcon('🎯'); 
@@ -106,17 +105,12 @@ function App() {
     try {
       const res = await axios.put(`https://habitforge-api-tpbd.onrender.com/api/habits/${id}/complete`, {}, config);
       setHabits(habits.map(habit => habit._id === id ? res.data.habit : habit));
-      
       setXp(res.data.userStats.xp);
       setLevel(res.data.userStats.level);
       setBadges(res.data.userStats.badges || []); 
-      
       localStorage.setItem('xp', res.data.userStats.xp);
       localStorage.setItem('level', res.data.userStats.level);
       localStorage.setItem('badges', JSON.stringify(res.data.userStats.badges || [])); 
-      
-      axios.get('https://habitforge-api-tpbd.onrender.com/api/leaderboard')
-        .then(res => setLeaderboard(res.data));
     } catch (err) {
       alert(err.response?.data?.message || "Something went wrong!");
     }
@@ -156,10 +150,8 @@ function App() {
         
         <div className="main-content" style={{ flex: '1', minWidth: '300px', maxWidth: '600px' }}>
           
-          {/* --- UPGRADED PLAYER STATS WITH AVATAR --- */}
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                 <img 
                   src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} 
@@ -171,7 +163,6 @@ function App() {
                   <p style={{ margin: '0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
                 </div>
               </div>
-
               {isPremium && (
                 <button onClick={exportToCSV} style={{ backgroundColor: '#27ae60', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
                   Export Data (CSV) 📥
@@ -245,7 +236,6 @@ function App() {
           </section>
 
           <section className="habit-display">
-            {/* --- NEW: FRAMER MOTION ANIMATIONS --- */}
             <AnimatePresence>
               {habits.map(habit => (
                 <motion.div 
@@ -277,17 +267,13 @@ function App() {
                       <span>{habit.icon || '🎯'}</span> {habit.title}
                     </h4>
                   )}
-
                   <p style={{ margin: '0 0 10px 0', color: '#34495e', fontWeight: 'bold' }}>Streak: {habit.currentStreak} 🔥</p>
-                  
                   <div className="button-group" style={{ display: 'flex', gap: '10px' }}>
                     <motion.button 
                       whileTap={{ scale: 0.9 }}
                       className="complete-btn" 
                       onClick={() => completeHabit(habit._id)}
-                    >
-                      Done! ✅
-                    </motion.button>
+                    >Done! ✅</motion.button>
                     <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Edit ✏️</button>
                     <button className="delete-btn" onClick={() => deleteHabit(habit._id)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Trash 🗑️</button>
                   </div>
@@ -297,22 +283,43 @@ function App() {
           </section>
         </div>
 
+        {/* --- HERE IS THE UPDATED HERO PROFILE CARD --- */}
         <div className="multiplayer-sidebar" style={{ flex: '1', minWidth: '250px', maxWidth: '350px' }}>
-          <div className="leaderboard-card" style={{ backgroundColor: '#fdfbf7', border: '2px solid #e0dcd3', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-            <h3 style={{ marginTop: '0', color: '#2c3e50', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hall of Fame 🏆</h3>
-            <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
-              {leaderboard.map((user, index) => (
-                <li key={user._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                  <span style={{ fontWeight: 'bold', color: index === 0 ? '#d35400' : '#34495e' }}>
-                    #{index + 1} {user.name}
-                  </span>
-                  <span style={{ color: '#7f8c8d' }}>
-                    Lvl {user.level}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="profile-card" 
+            style={{ backgroundColor: '#fdfbf7', border: '2px solid #f1c40f', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+          >
+            <h3 style={{ marginTop: '0', color: '#2c3e50', borderBottom: '2px solid #f1c40f', paddingBottom: '10px', textAlign: 'center' }}>
+              Hero Profile 🛡️
+            </h3>
+            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+              <img 
+                src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} 
+                alt="Hero Avatar" 
+                style={{ width: '80px', height: '80px', backgroundColor: '#ecf0f1', borderRadius: '50%', border: '4px solid #f1c40f' }}
+              />
+              <h4 style={{ margin: '10px 0 5px 0', color: '#34495e' }}>{localStorage.getItem('userEmail') || 'Habit Forger'}</h4>
+              <span style={{ fontSize: '12px', color: '#7f8c8d', backgroundColor: '#ecf0f1', padding: '2px 8px', borderRadius: '10px' }}>
+                Rank: Master Tracker
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'white', borderRadius: '4px' }}>
+                <span style={{ fontWeight: 'bold', color: '#7f8c8d' }}>Current Level</span>
+                <span style={{ color: '#2c3e50', fontWeight: 'bold' }}>{level}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'white', borderRadius: '4px' }}>
+                <span style={{ fontWeight: 'bold', color: '#7f8c8d' }}>Total XP</span>
+                <span style={{ color: '#2c3e50', fontWeight: 'bold' }}>{xp}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'white', borderRadius: '4px' }}>
+                <span style={{ fontWeight: 'bold', color: '#7f8c8d' }}>Habits Active</span>
+                <span style={{ color: '#2c3e50', fontWeight: 'bold' }}>{habits.length}</span>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
       </div>
