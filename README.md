@@ -9,10 +9,11 @@ HabitForge is a full-stack, gamified productivity web application designed to he
 ## 🎮 Core Features
 
 * **Gamified Progression & Achievements:** Earn 20 XP for every habit completed to level up. Maintain streaks to unlock badges like "Bronze Streak 🥉" and "Consistency King 👑" in your Trophy Room.
-* **Data Visualization:** Built-in `Chart.js` integration to visually track 7-day habit completion consistency.
-* **Freemium SaaS Model:** Core tracking is free (up to 3 habits). Upgrading to the Pro tier unlocks unlimited habits and advanced analytics.
-* **Full CRUD Functionality:** Users can Create, Read, Update (Edit), and Delete their daily habits.
-* **Streak Tracking:** Built-in daily tracking to visually monitor habit consistency (🔥).
+* **Multi-Theme UI Engine:** A dynamic, user-controlled theme switcher allowing seamless transitions between Light Mode, Dark Mode, and System Default, powered by CSS Variables.
+* **Custom Cloud Avatars:** Users can upload custom profile pictures directly to the cloud, seamlessly replacing the default AI-generated DiceBear avatars.
+* **Data Visualization:** Built-in `Chart.js` integration to visually track 30-day habit completion consistency and yearly heatmaps.
+* **Freemium SaaS Model:** Core tracking is free (up to 3 habits). Upgrading to the Pro tier unlocks unlimited habits, CSV data exports, and advanced analytics.
+* **Full CRUD Functionality:** Users can Create, Read, Update (Edit), and Delete their daily habits with customizable colors and icons.
 * **Multiplayer Leaderboard:** A real-time "Hall of Fame" that ranks the top 10 users globally based on their Level and XP.
 * **Secure Authentication:** User registration and login powered by encrypted passwords (bcrypt) and JWT (JSON Web Tokens).
 
@@ -21,29 +22,41 @@ HabitForge is a full-stack, gamified productivity web application designed to he
 ## 🛠️ Technology Stack
 
 **Frontend (Client)**
-* **React.js:** UI component architecture.
+* **React.js:** UI component architecture and state management.
+* **Framer Motion & Canvas Confetti:** Fluid UI transitions and gamified level-up celebration animations.
 * **Chart.js & react-chartjs-2:** Data visualization for user consistency graphs.
+* **Cloudinary SDK:** Direct-to-cloud image uploads for profile pictures.
 * **Axios:** Handling HTTP requests to the backend API.
-* **CSS3:** Custom styling and responsive design.
 * **Vercel:** Live frontend deployment.
 
 **Backend (Server)**
 * **Node.js & Express.js:** RESTful API architecture.
-* **MongoDB & Mongoose:** NoSQL database for flexible data storage.
+* **MongoDB & Mongoose:** NoSQL database for flexible time-series data storage.
 * **JSON Web Tokens (JWT):** Secure, stateless user authentication.
 * **Render:** Live backend deployment.
 
 ---
 
-## 🧠 Logic Documentation: Streak Calculation Algorithm
+## 🧠 Core Logic & Algorithms
 
-HabitForge calculates streaks dynamically to ensure accuracy and prevent cheating. When a user completes a habit, the system checks the `completedDates` array utilizing modular gamification logic. 
+### The Streak Calculation Engine
+The core retention mechanic of HabitForge relies on accurately tracking user consistency. The streak algorithm executes entirely on the Node.js backend to prevent client-side manipulation. 
 
-* **Timezone Handling:** The server converts the current date and the `lastCompletedDate` to UTC and sets the hours to `0:00:00`. This ensures that users across different global timezones are evaluated strictly on absolute calendar days.
-* **Missed Days & Resets:** The algorithm calculates the absolute difference in days between the last completion and today. 
-  * If the difference is exactly `1`, the streak increments. 
-  * If the difference is greater than `1`, the user missed a day and the streak resets to `1`. 
-  * If the difference is `0`, the completion is rejected (Anti-Cheat mechanism preventing multiple XP gains in a single day).
+**Handling Missed Days & Increments:**
+1. When a user marks a habit as complete, the system retrieves the `completedDates` array.
+2. It evaluates the time delta between the current server date and the last recorded entry.
+3. **Increment:** If the difference is exactly 1 day (the user checked in yesterday), the `currentStreak` increments by 1.
+4. **Maintain:** If the difference is 0 days (the user already checked in today), the API rejects the request to prevent duplicate XP farming.
+5. **Reset:** If the delta is strictly greater than 1 day, the user has missed at least one day. The `currentStreak` is immediately reset to `1` (accounting for the new check-in), breaking the previous streak.
+
+### The Timezone Solution (UTC Normalization)
+A common bug in daily tracking apps occurs when a server's local timezone differs from the user's timezone, leading to broken streaks or double-counting. 
+
+To solve this, HabitForge utilizes **UTC Normalization**. Before comparing dates, both the current timestamp and the historical timestamps are stripped of their time components using:
+
+`date.setUTCHours(0, 0, 0, 0)`
+
+By flattening all dates to UTC Midnight, the application ensures that a check-in at 11:50 PM and a subsequent check-in at 1:00 AM the next day are accurately calculated as a 2-day streak, completely immune to geographic timezone shifts.
 
 ---
 
