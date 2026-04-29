@@ -68,7 +68,7 @@
 }
 
 /* --- 4. PLAYER STATS & PROFILE --- */
-.player-stats, .profile-card, .chart-container, .forge-area {
+.profile-card, .chart-container, .forge-area {
   background-color: var(--card-bg) !important;
   color: var(--text-main) !important;
   border-radius: 12px;
@@ -146,4 +146,59 @@
   border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
+}
+/* --- 8. LOGIN PAGE FIX --- */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--card-bg);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.login-container input {
+  margin: 10px 0;
+  padding: 12px;
+  width: 250px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-main);
+}
+
+.login-container button {
+  background-color: #3498db;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 15px;
+  transition: background-color 0.2s;
+}
+
+.login-container button:hover {
+  background-color: #2980b9;
+}
+
+.login-container p {
+  cursor: pointer;
+  color: #3498db;
+  margin-top: 20px;
+  font-weight: bold;
 }
