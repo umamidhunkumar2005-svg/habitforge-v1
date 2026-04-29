@@ -38,7 +38,7 @@ function App() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'ml_default'); // Ensure this is 'Unsigned' in Cloudinary
+    formData.append('upload_preset', 'habitforge_preset'); // Changed to your new unsigned preset
 
     try {
       // 1. Upload to Cloudinary
