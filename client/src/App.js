@@ -23,7 +23,24 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
 
-  // Level Up Celebration Logic
+  // --- THEME LOGIC START ---
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const applyTheme = (t) => {
+      if (t === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.setAttribute('data-theme', systemTheme);
+      } else {
+        root.setAttribute('data-theme', t);
+      }
+    };
+    applyTheme(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  // --- THEME LOGIC END ---
+
   const prevLevel = useRef(level);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
@@ -155,6 +172,14 @@ function App() {
 
       <nav className="navbar">
         <h2>HabitForge {isPremium ? '💎 PRO' : '⚒️'}</h2>
+        
+        {/* --- THEME SWITCHER BUTTONS ADDED HERE --- */}
+        <div className="theme-switcher" style={{ display: 'flex', gap: '10px' }}>
+          <button className="theme-btn" onClick={() => setTheme('light')} title="Light Mode">☀️</button>
+          <button className="theme-btn" onClick={() => setTheme('dark')} title="Dark Mode">🌙</button>
+          <button className="theme-btn" onClick={() => setTheme('system')} title="System Default">💻</button>
+        </div>
+
         <button className="logout-btn" onClick={handleLogout}>Logout 🚪</button>
       </nav>
 
@@ -174,7 +199,7 @@ function App() {
             </div>
             <div className="xp-bar-container" style={{ backgroundColor: '#1a252f', height: '25px', borderRadius: '12px', position: 'relative', overflow: 'hidden', marginTop: '15px' }}>
               <motion.div animate={{ width: `${xp}%` }} style={{ backgroundColor: '#f1c40f', height: '100%' }} />
-              <span style={{ position: 'absolute', width: '100%', textAlign: 'center', top: '2px', fontSize: '14px', fontWeight: 'bold' }}>{xp} / 100 XP</span>
+              <span style={{ position: 'absolute', width: '100%', textAlign: 'center', top: '2px', fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{xp} / 100 XP</span>
             </div>
           </div>
 
@@ -182,36 +207,35 @@ function App() {
             {isPremium ? <ConsistencyChart habits={habits} /> : <div style={{ backgroundColor: '#2c3e50', padding: '20px', borderRadius: '8px', textAlign: 'center', color: 'white' }}><h3>Unlock Analytics 📈</h3><button onClick={upgradeToPro} style={{ backgroundColor: '#f1c40f', color: '#2c3e50', padding: '10px', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>Upgrade 💎</button></div>}
           </div>
 
-          {/* --- RE-STYLED FORGE AREA FOR VISIBILITY --- */}
-          <section className="forge-area" style={{ marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+          <section className="forge-area" style={{ marginBottom: '20px', padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
             <h3 style={{marginTop: 0}}>Forge a New Habit</h3>
             <form onSubmit={addHabit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <select value={icon} onChange={(e) => setIcon(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white' }}>
+                <select value={icon} onChange={(e) => setIcon(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)' }}>
                   <option value="🎯">🎯 Icon</option><option value="💧">💧 Water</option><option value="📚">📚 Read</option><option value="💪">💪 Gym</option>
-                  <option value="🧘">🧘 Zen</option><option value="💻">💻 Code</option><option value="跑">🏃 Run</option><option value="🎸">🎸 Play</option>
+                  <option value="🧘">🧘 Zen</option><option value="💻">💻 Code</option><option value="🏃">🏃 Run</option><option value="🎸">🎸 Play</option>
                 </select>
-                <input style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Read 30 pages" required />
+                <input className="habit-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Read 30 pages" required />
               </div>
               
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', flex: '1', backgroundColor: 'white' }}>
+                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', flex: '1', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)' }}>
                   <option value="Daily">Daily Frequency</option>
                   <option value="Weekly">Weekly Frequency</option>
                 </select>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 10px' }}>
-                  <label style={{ fontSize: '12px', color: '#7f8c8d', fontWeight: 'bold' }}>Border:</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Border:</label>
                   <motion.input 
                     whileHover={{ scale: 1.1 }}
                     type="color" 
                     value={color} 
                     onChange={(e) => setColor(e.target.value)} 
-                    style={{ width: '45px', height: '38px', padding: '2px', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'white' }} 
+                    style={{ width: '45px', height: '38px', padding: '2px', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'var(--input-bg)' }} 
                   />
                 </div>
 
-                <button type="submit" style={{ flex: '1', padding: '10px', backgroundColor: '#3498db', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Forge ⚒️</button>
+                <button type="submit" className="add-btn">Forge ⚒️</button>
               </div>
             </form>
           </section>
@@ -223,17 +247,17 @@ function App() {
                   <span style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: '#ecf0f1', color: '#7f8c8d', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>{habit.frequency || 'Daily'}</span>
                   {editingId === habit._id ? (
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <input style={{ flex: 1, padding: '5px' }} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
-                      <button onClick={() => saveEdit(habit._id)} style={{ backgroundColor: '#2ecc71', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px' }}>Save</button>
+                      <input className="habit-input" style={{ flex: 1 }} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
+                      <button onClick={() => saveEdit(habit._id)} className="add-btn" style={{ padding: '5px 10px' }}>Save</button>
                     </div>
                   ) : (
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', margin: '0 0 10px 0' }}><span>{habit.icon}</span> {habit.title}</h4>
                   )}
-                  <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Streak: {habit.currentStreak} 🔥</p>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button className="complete-btn" onClick={() => completeHabit(habit._id)}>Done! ✅</button>
-                    <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} style={{ backgroundColor: '#3498db', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Edit ✏️</button>
-                    <button onClick={() => deleteHabit(habit._id)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Trash 🗑️</button>
+                  <p className="streak-text">Streak: {habit.currentStreak} 🔥</p>
+                  <div className="button-group">
+                    <button className="check-in-btn" onClick={() => completeHabit(habit._id)}>Done! ✅</button>
+                    <button onClick={() => { setEditingId(habit._id); setEditTitle(habit.title); }} className="add-btn" style={{ padding: '8px 15px', backgroundColor: '#3498db' }}>Edit ✏️</button>
+                    <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Trash 🗑️</button>
                   </div>
                 </motion.div>
               ))}
@@ -242,7 +266,7 @@ function App() {
         </div>
 
         <div className="multiplayer-sidebar" style={{ flex: '1', minWidth: '250px', maxWidth: '350px' }}>
-          <div className="profile-card" style={{ backgroundColor: '#fdfbf7', border: '2px solid #f1c40f', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <div className="profile-card" style={{ padding: '20px', borderRadius: '8px' }}>
             <h3 style={{ marginTop: '0', textAlign: 'center', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hero Profile 🛡️</h3>
             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
               <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '80px', borderRadius: '50%', border: '4px solid #f1c40f' }} alt="Hero Avatar"/>
