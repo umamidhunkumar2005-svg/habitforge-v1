@@ -173,12 +173,13 @@ function App() {
       <nav className="navbar">
         <h2>HabitForge {isPremium ? '💎 PRO' : '⚒️'}</h2>
         
-        {/* --- THEME SWITCHER BUTTONS ADDED HERE --- */}
-        <div className="theme-switcher" style={{ display: 'flex', gap: '10px' }}>
-          <button className="theme-btn" onClick={() => setTheme('light')} title="Light Mode">☀️</button>
-          <button className="theme-btn" onClick={() => setTheme('dark')} title="Dark Mode">🌙</button>
-          <button className="theme-btn" onClick={() => setTheme('system')} title="System Default">💻</button>
+        {/* --- THEME SWITCHER START --- */}
+        <div className="theme-switcher">
+          <button className="theme-btn" onClick={() => setTheme('light')}>☀️</button>
+          <button className="theme-btn" onClick={() => setTheme('dark')}>🌙</button>
+          <button className="theme-btn" onClick={() => setTheme('system')}>💻</button>
         </div>
+        {/* --- THEME SWITCHER END --- */}
 
         <button className="logout-btn" onClick={handleLogout}>Logout 🚪</button>
       </nav>
