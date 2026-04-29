@@ -161,11 +161,10 @@ function App() {
       <div className="dashboard" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
         <div className="main-content" style={{ flex: '1', minWidth: '300px', maxWidth: '600px' }}>
           
-          {/* PLAYER STATS */}
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '60px', height: '60px', backgroundColor: '#ecf0f1', borderRadius: '50%', border: '3px solid #f1c40f' }} />
+                <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '60px', height: '60px', backgroundColor: '#ecf0f1', borderRadius: '50%', border: '3px solid #f1c40f' }} alt="Avatar"/>
                 <div>
                   <h3 style={{ margin: '0 0 5px 0', color: '#f1c40f' }}>Level {level}</h3>
                   <p style={{ margin: '0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
@@ -183,20 +182,36 @@ function App() {
             {isPremium ? <ConsistencyChart habits={habits} /> : <div style={{ backgroundColor: '#2c3e50', padding: '20px', borderRadius: '8px', textAlign: 'center', color: 'white' }}><h3>Unlock Analytics 📈</h3><button onClick={upgradeToPro} style={{ backgroundColor: '#f1c40f', color: '#2c3e50', padding: '10px', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>Upgrade 💎</button></div>}
           </div>
 
+          {/* --- RE-STYLED FORGE AREA FOR VISIBILITY --- */}
           <section className="forge-area" style={{ marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
             <h3 style={{marginTop: 0}}>Forge a New Habit</h3>
-            <form onSubmit={addHabit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <form onSubmit={addHabit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <select value={icon} onChange={(e) => setIcon(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                  <option value="🎯">🎯</option><option value="💧">💧</option><option value="📚">📚</option><option value="💪">💪</option>
-                  <option value="🧘">🧘</option><option value="💻">💻</option><option value="🏃">🏃</option><option value="🎸">🎸</option>
+                <select value={icon} onChange={(e) => setIcon(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white' }}>
+                  <option value="🎯">🎯 Icon</option><option value="💧">💧 Water</option><option value="📚">📚 Read</option><option value="💪">💪 Gym</option>
+                  <option value="🧘">🧘 Zen</option><option value="💻">💻 Code</option><option value="跑">🏃 Run</option><option value="🎸">🎸 Play</option>
                 </select>
                 <input style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Read 30 pages" required />
               </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}><option value="Daily">Daily</option><option value="Weekly">Weekly</option></select>
-                <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: '40px', height: '35px', border: 'none', cursor: 'pointer' }} />
-                <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: '#3498db', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Forge ⚒️</button>
+              
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
+                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', flex: '1', backgroundColor: 'white' }}>
+                  <option value="Daily">Daily Frequency</option>
+                  <option value="Weekly">Weekly Frequency</option>
+                </select>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 10px' }}>
+                  <label style={{ fontSize: '12px', color: '#7f8c8d', fontWeight: 'bold' }}>Border:</label>
+                  <motion.input 
+                    whileHover={{ scale: 1.1 }}
+                    type="color" 
+                    value={color} 
+                    onChange={(e) => setColor(e.target.value)} 
+                    style={{ width: '45px', height: '38px', padding: '2px', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'white' }} 
+                  />
+                </div>
+
+                <button type="submit" style={{ flex: '1', padding: '10px', backgroundColor: '#3498db', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Forge ⚒️</button>
               </div>
             </form>
           </section>
@@ -230,7 +245,7 @@ function App() {
           <div className="profile-card" style={{ backgroundColor: '#fdfbf7', border: '2px solid #f1c40f', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <h3 style={{ marginTop: '0', textAlign: 'center', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hero Profile 🛡️</h3>
             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-              <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '80px', borderRadius: '50%', border: '4px solid #f1c40f' }} />
+              <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '80px', borderRadius: '50%', border: '4px solid #f1c40f' }} alt="Hero Avatar"/>
               <h4 style={{ margin: '10px 0 0 0' }}>{localStorage.getItem('userEmail') || 'Hero'}</h4>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
