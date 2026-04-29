@@ -23,9 +23,42 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
 
-  // --- THEME LOGIC START ---
+  // --- THEME & PROFILE PIC STATE ---
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+  const [profilePic, setProfilePic] = useState(localStorage.getItem('profilePic') || '');
 
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  };
+
+  // --- IMAGE UPLOAD LOGIC ---
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'ml_default'); // Ensure this is 'Unsigned' in Cloudinary
+
+    try {
+      // 1. Upload to Cloudinary
+      const res = await axios.post('https://api.cloudinary.com/v1_1/delgtxzcj/image/upload', formData);
+      const imageUrl = res.data.secure_url;
+
+      // 2. Update Backend
+      await axios.put('https://habitforge-api-tpbd.onrender.com/api/auth/update-profile', { profilePicUrl: imageUrl }, config);
+
+      // 3. Update Frontend & LocalStorage
+      setProfilePic(imageUrl);
+      localStorage.setItem('profilePic', imageUrl);
+      alert("Profile Picture Updated! 📸");
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("Upload failed. Check Cloudinary settings.");
+    }
+  };
+
+  // --- THEME LOGIC ---
   useEffect(() => {
     const root = window.document.documentElement;
     const applyTheme = (t) => {
@@ -39,8 +72,8 @@ function App() {
     applyTheme(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
-  // --- THEME LOGIC END ---
 
+  // --- GAMIFICATION LOGIC ---
   const prevLevel = useRef(level);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
@@ -57,10 +90,6 @@ function App() {
     }
     prevLevel.current = level;
   }, [level]);
-
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
-  };
 
   useEffect(() => {
     if (token) {
@@ -173,13 +202,11 @@ function App() {
       <nav className="navbar">
         <h2>HabitForge {isPremium ? '💎 PRO' : '⚒️'}</h2>
         
-        {/* --- THEME SWITCHER START --- */}
         <div className="theme-switcher">
-          <button className="theme-btn" onClick={() => setTheme('light')}>☀️</button>
-          <button className="theme-btn" onClick={() => setTheme('dark')}>🌙</button>
-          <button className="theme-btn" onClick={() => setTheme('system')}>💻</button>
+          <button className="theme-btn" onClick={() => setTheme('light')} title="Light Mode">☀️</button>
+          <button className="theme-btn" onClick={() => setTheme('dark')} title="Dark Mode">🌙</button>
+          <button className="theme-btn" onClick={() => setTheme('system')} title="System Default">💻</button>
         </div>
-        {/* --- THEME SWITCHER END --- */}
 
         <button className="logout-btn" onClick={handleLogout}>Logout 🚪</button>
       </nav>
@@ -190,7 +217,14 @@ function App() {
           <div className="player-stats" style={{ backgroundColor: '#2c3e50', color: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '60px', height: '60px', backgroundColor: '#ecf0f1', borderRadius: '50%', border: '3px solid #f1c40f' }} alt="Avatar"/>
+                <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => document.getElementById('fileInput').click()}>
+                   <img 
+                    src={profilePic || `https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} 
+                    style={{ width: '60px', height: '60px', backgroundColor: '#ecf0f1', borderRadius: '50%', border: '3px solid #f1c40f', objectFit: 'cover' }} 
+                    alt="Mini Avatar"
+                  />
+                  <div style={{ position: 'absolute', bottom: '0', right: '0', background: '#f1c40f', borderRadius: '50%', padding: '2px', fontSize: '8px' }}>📸</div>
+                </div>
                 <div>
                   <h3 style={{ margin: '0 0 5px 0', color: '#f1c40f' }}>Level {level}</h3>
                   <p style={{ margin: '0', fontSize: '12px', color: '#bdc3c7' }}>Forge habits to reach the next level!</p>
@@ -267,13 +301,24 @@ function App() {
         </div>
 
         <div className="multiplayer-sidebar" style={{ flex: '1', minWidth: '250px', maxWidth: '350px' }}>
-          <div className="profile-card" style={{ padding: '20px', borderRadius: '8px' }}>
-            <h3 style={{ marginTop: '0', textAlign: 'center', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hero Profile 🛡️</h3>
-            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-              <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} style={{ width: '80px', borderRadius: '50%', border: '4px solid #f1c40f' }} alt="Hero Avatar"/>
-              <h4 style={{ margin: '10px 0 0 0' }}>{localStorage.getItem('userEmail') || 'Hero'}</h4>
+          <div className="profile-card" style={{ padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+            <h3 style={{ marginTop: '0', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hero Profile 🛡️</h3>
+            
+            {/* --- CLICKABLE PROFILE PICTURE --- */}
+            <div style={{ position: 'relative', display: 'inline-block', cursor: 'pointer', marginTop: '15px' }} onClick={() => document.getElementById('fileInput').click()}>
+              <img 
+                src={profilePic || `https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} 
+                style={{ width: '100px', height: '100px', borderRadius: '50%', border: '4px solid #f1c40f', objectFit: 'cover' }} 
+                alt="Hero Avatar"
+              />
+              <div style={{ position: 'absolute', bottom: '5px', right: '5px', background: '#f1c40f', borderRadius: '50%', padding: '6px', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>✏️</div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            
+            {/* HIDDEN FILE INPUT */}
+            <input type="file" id="fileInput" style={{ display: 'none' }} onChange={handleImageUpload} accept="image/*" />
+
+            <h4 style={{ margin: '15px 0 15px 0' }}>{localStorage.getItem('userEmail') || 'Hero'}</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Level</span><b>{level}</b></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Total XP</span><b>{xp}</b></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Active</span><b>{habits.length}</b></div>

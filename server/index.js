@@ -20,6 +20,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Database Connection: SUCCESS!'))
   .catch((err) => console.error('Database Connection: FAILED...', err));
 
+// --- REGISTRATION ---
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -36,6 +37,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// --- LOGIN ---
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -47,13 +49,37 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     
-    res.json({ token, user: { id: user._id, email: user.email, xp: user.xp, level: user.level, badges: user.badges, isPremium: user.isPremium } });
+    res.json({ token, user: { 
+      id: user._id, 
+      email: user.email, 
+      xp: user.xp, 
+      level: user.level, 
+      badges: user.badges, 
+      isPremium: user.isPremium,
+      profilePicUrl: user.profilePicUrl // Included in login response
+    } });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
   }
 });
 
-// --- UPGRADE TO PRO ROUTE ---
+// --- NEW ROUTE: UPDATE PROFILE PICTURE ---
+app.put('/api/auth/update-profile', auth, async (req, res) => {
+  try {
+    const { profilePicUrl } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.userId, 
+      { profilePicUrl }, 
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "Profile updated successfully", profilePicUrl: user.profilePicUrl });
+  } catch (err) {
+    res.status(500).json({ error: "Profile update failed" });
+  }
+});
+
+// --- UPGRADE TO PRO ---
 app.put('/api/auth/upgrade', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -65,6 +91,7 @@ app.put('/api/auth/upgrade', auth, async (req, res) => {
   }
 });
 
+// --- GET ALL HABITS ---
 app.get('/api/habits', auth, async (req, res) => {
   try {
     const habits = await Habit.find({ user: req.userId }); 
@@ -74,12 +101,12 @@ app.get('/api/habits', auth, async (req, res) => {
   }
 });
 
+// --- CREATE HABIT ---
 app.post('/api/habits', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     const habitCount = await Habit.countDocuments({ user: req.userId });
 
-    // --- FREEMIUM LIMIT LOGIC ---
     if (!user.isPremium && habitCount >= 3) {
       return res.status(403).json({ message: "Free tier is limited to 3 habits. Upgrade to Pro!" });
     }
@@ -88,7 +115,6 @@ app.post('/api/habits', auth, async (req, res) => {
       title: req.body.title,
       description: req.body.description || "",
       user: req.userId,
-      // --- NEW: ACCEPTING METADATA FROM FRONTEND ---
       frequency: req.body.frequency || 'Daily',
       color: req.body.color || '#3498db',
       icon: req.body.icon || '🎯'
@@ -100,6 +126,7 @@ app.post('/api/habits', auth, async (req, res) => {
   }
 });
 
+// --- COMPLETE HABIT ---
 app.put('/api/habits/:id/complete', auth, async (req, res) => {
   try {
     const habit = await Habit.findOne({ _id: req.params.id, user: req.userId });
@@ -145,6 +172,7 @@ app.put('/api/habits/:id/complete', auth, async (req, res) => {
   }
 });
 
+// --- DELETE HABIT ---
 app.delete('/api/habits/:id', auth, async (req, res) => {
   try {
     await Habit.findOneAndDelete({ _id: req.params.id, user: req.userId });
@@ -154,6 +182,7 @@ app.delete('/api/habits/:id', auth, async (req, res) => {
   }
 });
 
+// --- EDIT HABIT ---
 app.put('/api/habits/:id/edit', auth, async (req, res) => {
   try {
     const updatedHabit = await Habit.findOneAndUpdate(
@@ -167,7 +196,7 @@ app.put('/api/habits/:id/edit', auth, async (req, res) => {
   }
 });
 
-// --- TEMPORARY SEED ROUTE (Bypasses Local Network Issues) ---
+// --- SEED ROUTE ---
 app.get('/api/seed', async (req, res) => {
   try {
     const email = "demo@habitforge.com";
@@ -204,12 +233,13 @@ app.get('/api/seed', async (req, res) => {
     });
 
     await demoHabit.save();
-    res.status(200).send("<h1>🎉 Database Seeded Successfully! You can close this page.</h1>");
+    res.status(200).send("<h1>🎉 Database Seeded Successfully!</h1>");
   } catch (err) {
     res.status(500).send("Error: " + err.message);
   }
 });
 
+// --- LEADERBOARD ---
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const topUsers = await User.find({}, 'email level xp').sort({ level: -1, xp: -1 }).limit(10);
