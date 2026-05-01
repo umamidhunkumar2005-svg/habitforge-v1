@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import Login from './Login';
 import ConsistencyChart from './ConsistencyChart'; 
+import Leaderboard from './Leaderboard'; // <-- Leaderboard imported here!
 import './App.css';
 
 function App() {
@@ -38,7 +39,7 @@ function App() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'habitforge_preset'); // Changed to your new unsigned preset
+    formData.append('upload_preset', 'habitforge_preset'); 
 
     try {
       // 1. Upload to Cloudinary
@@ -300,11 +301,11 @@ function App() {
           </section>
         </div>
 
+        {/* --- MULTIPLAYER SIDEBAR --- */}
         <div className="multiplayer-sidebar" style={{ flex: '1', minWidth: '250px', maxWidth: '350px' }}>
           <div className="profile-card" style={{ padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ marginTop: '0', borderBottom: '2px solid #f1c40f', paddingBottom: '10px' }}>Hero Profile 🛡️</h3>
             
-            {/* --- CLICKABLE PROFILE PICTURE --- */}
             <div style={{ position: 'relative', display: 'inline-block', cursor: 'pointer', marginTop: '15px' }} onClick={() => document.getElementById('fileInput').click()}>
               <img 
                 src={profilePic || `https://api.dicebear.com/7.x/adventurer/svg?seed=HabitForgeLvl${level}`} 
@@ -314,7 +315,6 @@ function App() {
               <div style={{ position: 'absolute', bottom: '5px', right: '5px', background: '#f1c40f', borderRadius: '50%', padding: '6px', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>✏️</div>
             </div>
             
-            {/* HIDDEN FILE INPUT */}
             <input type="file" id="fileInput" style={{ display: 'none' }} onChange={handleImageUpload} accept="image/*" />
 
             <h4 style={{ margin: '15px 0 15px 0' }}>{localStorage.getItem('userEmail') || 'Hero'}</h4>
@@ -324,6 +324,10 @@ function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Active</span><b>{habits.length}</b></div>
             </div>
           </div>
+
+          {/* --- NEW LEADERBOARD COMPONENT --- */}
+          <Leaderboard />
+
         </div>
       </div>
     </div>
