@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import Login from './Login';
 import ConsistencyChart from './ConsistencyChart'; 
-import Leaderboard from './Leaderboard'; // <-- Leaderboard imported here!
+import Leaderboard from './Leaderboard';
 import './App.css';
 
 function App() {
@@ -323,6 +323,24 @@ function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Total XP</span><b>{xp}</b></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Active</span><b>{habits.length}</b></div>
             </div>
+
+            {/* --- MISSING PIECE: BADGE COLLECTION --- */}
+            <div style={{ marginTop: '20px', borderTop: '2px solid var(--border-color)', paddingTop: '15px' }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#bdc3c7', fontSize: '14px', textTransform: 'uppercase' }}>Trophies</h4>
+              {badges.length === 0 ? (
+                <p style={{ fontSize: '12px', color: '#7f8c8d', fontStyle: 'italic' }}>Maintain a 3-day streak to earn your first badge!</p>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {badges.map((badge, index) => (
+                    <div key={index} title={badge} style={{ backgroundColor: 'rgba(241, 196, 15, 0.1)', border: '1px solid #f1c40f', padding: '5px 10px', borderRadius: '20px', fontSize: '12px', color: '#f1c40f', fontWeight: 'bold' }}>
+                      {badge}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* -------------------------------------- */}
+
           </div>
 
           {/* --- NEW LEADERBOARD COMPONENT --- */}
